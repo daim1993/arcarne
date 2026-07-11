@@ -684,6 +684,21 @@ function glowTex(){
   g.fillStyle=grd;g.fillRect(0,0,128,128);return new THREE.CanvasTexture(c);
 }
 const TEX=glowTex();
+function cometTailTex(){
+  const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');
+  const body=g.createLinearGradient(0,32,256,32);
+  body.addColorStop(0,'rgba(115,224,232,0)');body.addColorStop(.45,'rgba(115,224,232,.08)');
+  body.addColorStop(.78,'rgba(230,207,139,.42)');body.addColorStop(1,'rgba(255,255,255,.92)');
+  g.fillStyle=body;g.fillRect(0,18,256,28);
+  const halo=g.createRadialGradient(224,32,0,224,32,38);
+  halo.addColorStop(0,'rgba(255,255,255,.95)');halo.addColorStop(.28,'rgba(230,207,139,.34)');halo.addColorStop(1,'transparent');
+  g.globalCompositeOperation='lighter';g.fillStyle=halo;g.fillRect(180,0,76,64);
+  const edge=g.createLinearGradient(0,0,0,64);
+  edge.addColorStop(0,'rgba(255,255,255,0)');edge.addColorStop(.5,'rgba(255,255,255,1)');edge.addColorStop(1,'rgba(255,255,255,0)');
+  g.globalCompositeOperation='destination-in';g.fillStyle=edge;g.fillRect(0,0,256,64);
+  return new THREE.CanvasTexture(c);
+}
+const COMET_TAIL=cometTailTex();
 function flareTex(){
   const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
   const grd=g.createRadialGradient(128,128,0,128,128,128);
@@ -1500,6 +1515,7 @@ const flows=[];
 /* Path-driven streams keep a visible, continuous crawl. Their shader swirl is
    disabled below, so these rates are the only motion they contribute. */
 const FLOW_RATE=lowPower?.5:.9;
+const STREAM_TAIL_AXIS=new THREE.Vector3(0,0,1),STREAM_TAIL_OFFSET=.035;
 function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   // open S-curve through space, so the stream reads as a passing comet ribbon
   const pts=[];
@@ -1569,11 +1585,23 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
     const after=new THREE.Points(afterGeo,afterMat);after.renderOrder=3;
     streamAfterimages.push({pos:afterPos,geo:afterGeo,points:after,offset:.018+step*.018,baseOpacity});
   }
+  /* A stretched billboard gives every moving body particle a readable comet
+     tail. It is a tapered sprite, not a spline or line, and stays aligned to
+     the particle's actual direction of travel. */
+  const tailMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({
+    map:COMET_TAIL,transparent:true,opacity:.22,blending:THREE.AdditiveBlending,
+    depthWrite:false,depthTest:false,side:THREE.DoubleSide,toneMapped:false}),count);
+  tailMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);tailMesh.frustumCulled=false;tailMesh.renderOrder=4;
+  const tailDummy=new THREE.Object3D();
   const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body);
-  particleTrails.forEach(a=>group.add(a.points));group.add(glints);
+  group.add(tailMesh);particleTrails.forEach(a=>group.add(a.points));group.add(glints);
   streamAfterimages.forEach(a=>group.add(a.points));scene.add(group);
   flows.push({TAB,pos,us,jit,geo,speed,count,glintPos,glintUs,glintJit,glintGeo,glintMat,
-    glintCount,particleTrails,streamAfterimages,volume,phase:Math.random()*Math.PI*2});
+    glintCount,particleTrails,streamAfterimages,tailMesh,tailDummy,group,
+    tailHead:new THREE.Vector3(),tailBack:new THREE.Vector3(),tailCenter:new THREE.Vector3(),
+    tailDir:new THREE.Vector3(),tailRight:new THREE.Vector3(),tailUp:new THREE.Vector3(),
+    tailInvGroup:new THREE.Quaternion(),tailWorldQ:new THREE.Quaternion(),tailLocalQ:new THREE.Quaternion(),
+    tailRoll:new THREE.Quaternion(),volume,phase:Math.random()*Math.PI*2});
 }
 /* One authored stream, dense enough to read as a volumetric ribbon rather than
    eight competing loops. Gold carries the body, cyan marks the moving core. */
@@ -1581,6 +1609,9 @@ makeFlow(0xe6cf8b,290,.34,.24,.010,5200,60);
 function updateFlows(dt){
   for(const f of flows){
     const T=f.TAB,L=T.length-1;
+    f.tailRight.set(1,0,0).applyQuaternion(camera.quaternion);
+    f.tailUp.set(0,1,0).applyQuaternion(camera.quaternion);
+    f.tailInvGroup.copy(f.group.quaternion).invert();
     for(let i=0;i<f.count;i++){
       let u=(f.us[i]+f.speed*dt*FLOW_RATE)%1;if(u>=.999999)u=0;f.us[i]=u;
       const x=u*L,i0=Math.min(L-1,x|0),fr=x-i0,A=T[i0],B=T[i0+1];
@@ -1593,8 +1624,21 @@ function updateFlows(dt){
         trail.pos[i*3+1]=TA.y+(TB.y-TA.y)*tf+f.jit[i*3+1]*.94;
         trail.pos[i*3+2]=TA.z+(TB.z-TA.z)*tf+f.jit[i*3+2]*.94;
       }
+      const tailU=Math.max(0,u-STREAM_TAIL_OFFSET),tailX=tailU*L,tailI=Math.min(L-1,tailX|0),tailF=tailX-tailI,tailA=T[tailI],tailB=T[tailI+1];
+      f.tailHead.set(f.pos[i*3],f.pos[i*3+1],f.pos[i*3+2]);
+      f.tailBack.set(tailA.x+(tailB.x-tailA.x)*tailF+f.jit[i*3],
+        tailA.y+(tailB.y-tailA.y)*tailF+f.jit[i*3+1],tailA.z+(tailB.z-tailA.z)*tailF+f.jit[i*3+2]);
+      f.tailCenter.copy(f.tailHead).add(f.tailBack).multiplyScalar(.5);
+      f.tailDir.copy(f.tailHead).sub(f.tailBack).applyQuaternion(f.group.quaternion);
+      const tailLen=Math.min(18,Math.max(3.5,f.tailDir.length()*.18)),tailAngle=Math.atan2(f.tailDir.dot(f.tailUp),f.tailDir.dot(f.tailRight));
+      f.tailDummy.position.copy(f.tailCenter);f.tailRoll.setFromAxisAngle(STREAM_TAIL_AXIS,tailAngle);
+      f.tailWorldQ.copy(camera.quaternion).multiply(f.tailRoll);
+      f.tailLocalQ.copy(f.tailInvGroup).multiply(f.tailWorldQ);
+      f.tailDummy.quaternion.copy(f.tailLocalQ);f.tailDummy.scale.set(tailLen,.72+f.volume*.006,1);
+      f.tailDummy.updateMatrix();f.tailMesh.setMatrixAt(i,f.tailDummy.matrix);
     }
     f.geo.attributes.position.needsUpdate=true;
+    f.tailMesh.instanceMatrix.needsUpdate=true;
     f.phase+=dt;
     for(let i=0;i<f.glintCount;i++){
       let u=(f.glintUs[i]+f.speed*dt*FLOW_RATE*1.05)%1;if(u>=.999999)u=0;f.glintUs[i]=u;
