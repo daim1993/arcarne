@@ -1521,23 +1521,23 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   attr.setUsage(THREE.DynamicDrawUsage);          // streamed every frame — tell GPU
   geo.setAttribute('position',attr);
   geo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
-  const bodyMat=new THREE.PointsMaterial({size:2,map:TEX,color,
-    transparent:true,opacity:.42,blending:THREE.AdditiveBlending,depthWrite:false});
+  const bodyMat=new THREE.PointsMaterial({size:2.6,map:TEX,color,
+    transparent:true,opacity:.56,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false});
   glowify(bodyMat,0);
   const body=new THREE.Points(geo,bodyMat);
   /* TouchDesigner-style feedback: every particle owns a fading history of its
      previous rendered positions. The history is eased toward the live particle
      so the wake follows bends organically instead of drawing a fixed trail. */
-  const particleTrails=[],PARTICLE_TRAIL_STEPS=lowPower?4:8;
+  const particleTrails=[],PARTICLE_TRAIL_STEPS=lowPower?5:10;
   for(let step=0;step<PARTICLE_TRAIL_STEPS;step++){
     const trailPos=new Float32Array(count*3),trailGeo=new THREE.BufferGeometry();
     trailGeo.setAttribute('position',new THREE.BufferAttribute(trailPos,3));
     trailGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
-    const baseOpacity=.075*Math.pow(.74,step),trailColor=step%3===0?0xe6cf8b:0x73e0e8;
-    const trailMat=new THREE.PointsMaterial({size:2.4+step*.1,map:TEX,color:trailColor,
+    const baseOpacity=.095*Math.pow(.78,step),trailColor=step%3===0?0xe6cf8b:0x73e0e8;
+    const trailMat=new THREE.PointsMaterial({size:2.6+step*.12,map:TEX,color:trailColor,
       transparent:true,opacity:baseOpacity,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false});
     const trail=new THREE.Points(trailGeo,trailMat);trail.renderOrder=2;
-    particleTrails.push({pos:trailPos,geo:trailGeo,points:trail,follow:.22*Math.pow(.72,step),baseOpacity});
+    particleTrails.push({pos:trailPos,geo:trailGeo,points:trail,follow:.18*Math.pow(.72,step),baseOpacity});
   }
 
   /* Sparse, brighter tracer particles make selected stream sections read as
@@ -1550,8 +1550,8 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   const glintGeo=new THREE.BufferGeometry(),glintAttr=new THREE.BufferAttribute(glintPos,3);
   glintAttr.setUsage(THREE.DynamicDrawUsage);glintGeo.setAttribute('position',glintAttr);
   glintGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
-  const glintMat=new THREE.PointsMaterial({size:3.8,map:TEX,color:0x73e0e8,
-    transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false});
+  const glintMat=new THREE.PointsMaterial({size:4.6,map:TEX,color:0x73e0e8,
+    transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false});
   glowify(glintMat,0);
   const glints=new THREE.Points(glintGeo,glintMat);
   /* Long feedback-like afterimages stay particle-only. Each layer samples the
