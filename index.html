@@ -1528,16 +1528,16 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   /* TouchDesigner-style feedback: every particle owns a fading history of its
      previous rendered positions. The history is eased toward the live particle
      so the wake follows bends organically instead of drawing a fixed trail. */
-  const particleTrails=[],PARTICLE_TRAIL_STEPS=lowPower?5:10;
+  const particleTrails=[],PARTICLE_TRAIL_STEPS=lowPower?6:14;
   for(let step=0;step<PARTICLE_TRAIL_STEPS;step++){
     const trailPos=new Float32Array(count*3),trailGeo=new THREE.BufferGeometry();
     trailGeo.setAttribute('position',new THREE.BufferAttribute(trailPos,3));
     trailGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
-    const baseOpacity=.095*Math.pow(.78,step),trailColor=step%3===0?0xe6cf8b:0x73e0e8;
-    const trailMat=new THREE.PointsMaterial({size:2.6+step*.12,map:TEX,color:trailColor,
+    const baseOpacity=.06*Math.pow(.84,step),trailColor=step%3===0?0xe6cf8b:0x73e0e8;
+    const trailMat=new THREE.PointsMaterial({size:2.5+step*.08,map:TEX,color:trailColor,
       transparent:true,opacity:baseOpacity,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false});
     const trail=new THREE.Points(trailGeo,trailMat);trail.renderOrder=2;
-    particleTrails.push({pos:trailPos,geo:trailGeo,points:trail,follow:.18*Math.pow(.72,step),baseOpacity});
+    particleTrails.push({pos:trailPos,geo:trailGeo,points:trail,follow:.34*Math.pow(.96,step),baseOpacity});
   }
 
   /* Sparse, brighter tracer particles make selected stream sections read as
@@ -1588,14 +1588,15 @@ function updateFlows(dt){
       f.pos[i*3]  =A.x+(B.x-A.x)*fr+f.jit[i*3];
       f.pos[i*3+1]=A.y+(B.y-A.y)*fr+f.jit[i*3+1];
       f.pos[i*3+2]=A.z+(B.z-A.z)*fr+f.jit[i*3+2];
-      for(const trail of f.particleTrails){
+      for(let trailIndex=0;trailIndex<f.particleTrails.length;trailIndex++){
+        const trail=f.particleTrails[trailIndex],source=trailIndex===0?f.pos:f.particleTrails[trailIndex-1].pos;
         const p=i*3,follow=trail.follow;
         if(!f.historyPrimed){
           trail.pos[p]=f.pos[p];trail.pos[p+1]=f.pos[p+1];trail.pos[p+2]=f.pos[p+2];
         }else{
-          trail.pos[p]+=(f.pos[p]-trail.pos[p])*follow;
-          trail.pos[p+1]+=(f.pos[p+1]-trail.pos[p+1])*follow;
-          trail.pos[p+2]+=(f.pos[p+2]-trail.pos[p+2])*follow;
+          trail.pos[p]+=(source[p]-trail.pos[p])*follow;
+          trail.pos[p+1]+=(source[p+1]-trail.pos[p+1])*follow;
+          trail.pos[p+2]+=(source[p+2]-trail.pos[p+2])*follow;
         }
       }
     }
