@@ -503,7 +503,23 @@ const lowPower=coarse||innerWidth<800||(navigator.hardwareConcurrency&&navigator
   (navigator.deviceMemory&&navigator.deviceMemory<=4)||navigator.connection?.saveData===true;
 
 /* ============ CMS config (set via cms.html, same browser) ============ */
-const RAW_CFG=(()=>{try{const v=JSON.parse(localStorage.getItem('arcarne_cfg'));return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return{}}})();
+const CMS_CFG_KEY='arcarne_cfg';
+const CMS_CFG_CHANNEL='arcarne_cfg_update';
+const RAW_CFG=(()=>{try{const v=JSON.parse(localStorage.getItem(CMS_CFG_KEY));return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return{}}})();
+let cmsReloadTimer=0;
+function reloadFromCmsUpdate(){
+  clearTimeout(cmsReloadTimer);
+  cmsReloadTimer=setTimeout(()=>location.reload(),220);
+}
+addEventListener('storage',event=>{
+  if(event.key===CMS_CFG_KEY)reloadFromCmsUpdate();
+});
+if('BroadcastChannel' in window){
+  const cmsChannel=new BroadcastChannel(CMS_CFG_CHANNEL);
+  cmsChannel.addEventListener('message',event=>{
+    if(event.data?.key===CMS_CFG_KEY)reloadFromCmsUpdate();
+  });
+}
 const cfgNum=(key,fallback,min,max)=>{
   const n=Number(RAW_CFG[key]);return Number.isFinite(n)?Math.min(max,Math.max(min,n)):fallback;
 };

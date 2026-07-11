@@ -250,6 +250,8 @@ const SETTINGS=[
  ['sfx','Sound on start',0,1,0,1],
 ];
 const KEY='arcarne_cfg';
+const CHANNEL='arcarne_cfg_update';
+const cfgChannel='BroadcastChannel' in window?new BroadcastChannel(CHANNEL):null;
 let cfg={};
 try{cfg=JSON.parse(localStorage.getItem(KEY))||{}}catch(error){cfg={}}
 if(!cfg.stars||typeof cfg.stars!=='object'||Array.isArray(cfg.stars))cfg.stars={};
@@ -310,7 +312,8 @@ function collect(){
 function save(){
   cfg=collect();
   localStorage.setItem(KEY,JSON.stringify(cfg));
-  flash('Saved · reload the universe tab');
+  cfgChannel?.postMessage({type:'saved',key:KEY,at:Date.now()});
+  flash('Saved - universe updated');
 }
 function exportCfg(){
   document.getElementById('io').value=JSON.stringify(collect(),null,1);
@@ -321,13 +324,16 @@ function importCfg(){
     const value=JSON.parse(document.getElementById('io').value);
     if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Configuration must be an object');
     localStorage.setItem(KEY,JSON.stringify(value));
+    cfgChannel?.postMessage({type:'saved',key:KEY,at:Date.now()});
     flash('Imported · reloading console');
     setTimeout(()=>location.reload(),700);
   }catch(error){flash('Invalid configuration JSON','error')}
 }
 function resetCfg(){
   if(!confirm('Reset all customizations to defaults?'))return;
-  localStorage.removeItem(KEY);flash('Reset complete');setTimeout(()=>location.reload(),500);
+  localStorage.removeItem(KEY);
+  cfgChannel?.postMessage({type:'reset',key:KEY,at:Date.now()});
+  flash('Reset complete');setTimeout(()=>location.reload(),500);
 }
 let flashTimer;
 function flash(message,state='success'){
