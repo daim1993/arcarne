@@ -1500,7 +1500,6 @@ const flows=[];
 /* Path-driven streams keep a visible, continuous crawl. Their shader swirl is
    disabled below, so these rates are the only motion they contribute. */
 const FLOW_RATE=lowPower?.5:.9;
-const STREAM_RATE=lowPower?1.2:2.2;
 function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   // open S-curve through space, so the stream reads as a passing comet ribbon
   const pts=[];
@@ -1541,47 +1540,18 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
     transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false});
   glowify(glintMat,0);
   const glints=new THREE.Points(glintGeo,glintMat);
-  /* A moving, high-contrast ribbon makes the stream itself travel with the
-     particles. It is only a short arc of the open path. */
-  const streamCount=56,streamPos=new Float32Array(streamCount*3);
-  const streamGeo=new THREE.BufferGeometry(),streamAttr=new THREE.BufferAttribute(streamPos,3);
-  streamAttr.setUsage(THREE.DynamicDrawUsage);streamGeo.setAttribute('position',streamAttr);
-  streamGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
-  /* Feedback tails: three paired afterimages per tracer. LineSegments avoids
-     connecting unrelated particles, so each independent stream keeps its own
-     readable wake. */
-  const trailPos=new Float32Array(glintCount*3*2*3);
-  const trailGeo=new THREE.BufferGeometry(),trailAttr=new THREE.BufferAttribute(trailPos,3);
-  trailAttr.setUsage(THREE.DynamicDrawUsage);trailGeo.setAttribute('position',trailAttr);
-  trailGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
-  const trailColor=(color===0x62d5e4||color===0x9beef0||color===0x3aaec4)?0x62d5e4:0xe6cf8b;
-  const streamMat=new THREE.LineBasicMaterial({color:trailColor,transparent:true,opacity:.38,
-    blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false});
-  const stream=new THREE.Line(streamGeo,streamMat);stream.renderOrder=-1;
-  const trailMat=new THREE.LineBasicMaterial({color:trailColor,transparent:true,opacity:.28,
-    blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false});
-  const trail=new THREE.LineSegments(trailGeo,trailMat);trail.renderOrder=-1;
-  const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body,stream,trail,glints);scene.add(group);
+  /* No drawn spline or line trail. The moving points are fed into the scene's
+     framebuffer persistence pass below, producing a soft motion-blur wake. */
+  const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body,glints);scene.add(group);
   flows.push({TAB,pos,us,jit,geo,speed,count,glintPos,glintUs,glintJit,glintGeo,glintMat,
-    glintCount,streamCount,streamPos,streamGeo,streamMat,stream,streamU:Math.random(),trailPos,trailGeo,trailMat,trail,
-    volume,phase:Math.random()*Math.PI*2});
+    glintCount,volume,phase:Math.random()*Math.PI*2});
 }
 /* One authored stream, dense enough to read as a volumetric ribbon rather than
    eight competing loops. Gold carries the body, cyan marks the moving core. */
 makeFlow(0xe6cf8b,290,.34,.24,.010,5200,60);
 function updateFlows(dt){
-  const streamSpan=.14;
   for(const f of flows){
     const T=f.TAB,L=T.length-1;
-    f.streamU+=f.speed*dt*STREAM_RATE;
-    if(f.streamU>1-streamSpan)f.streamU=0;
-    for(let si=0;si<f.streamCount;si++){
-      const su=(f.streamU+si/(f.streamCount-1)*streamSpan)%1,sx=su*L,s0=Math.min(L-1,sx|0),sf=sx-s0,A=T[s0],B=T[s0+1];
-      f.streamPos[si*3]=A.x+(B.x-A.x)*sf;
-      f.streamPos[si*3+1]=A.y+(B.y-A.y)*sf;
-      f.streamPos[si*3+2]=A.z+(B.z-A.z)*sf;
-    }
-    f.streamGeo.attributes.position.needsUpdate=true;
     for(let i=0;i<f.count;i++){
       let u=(f.us[i]+f.speed*dt*FLOW_RATE)%1;if(u>=.999999)u=0;f.us[i]=u;
       const x=u*L,i0=Math.min(L-1,x|0),fr=x-i0,A=T[i0],B=T[i0+1];
@@ -1597,36 +1567,10 @@ function updateFlows(dt){
       f.glintPos[i*3]=A.x+(B.x-A.x)*fr+f.glintJit[i*3];
       f.glintPos[i*3+1]=A.y+(B.y-A.y)*fr+f.glintJit[i*3+1];
       f.glintPos[i*3+2]=A.z+(B.z-A.z)*fr+f.glintJit[i*3+2];
-      /* Consecutive segments follow the same baked curve, so the wake bends
-         with the stream instead of cutting straight chords across it. */
-      for(let tail=0;tail<3;tail++){
-        const back=.006+tail*.008,frontBack=tail?back-.008:0;
-        const base=(i*3+tail)*6;
-        if(u<.024){
-          f.trailPos[base]=f.glintPos[i*3];f.trailPos[base+1]=f.glintPos[i*3+1];f.trailPos[base+2]=f.glintPos[i*3+2];
-          f.trailPos[base+3]=f.glintPos[i*3];f.trailPos[base+4]=f.glintPos[i*3+1];f.trailPos[base+5]=f.glintPos[i*3+2];
-          continue;
-        }
-        const fu=(u-frontBack+1)%1,bu=(u-back+1)%1;
-        const fx=fu*L,fi=Math.min(L-1,fx|0),ff=fx-fi,fA=T[fi],fB=T[fi+1];
-        const bx=bu*L,bi=Math.min(L-1,bx|0),bf=bx-bi,bA=T[bi],bB=T[bi+1];
-        if(tail===0){f.trailPos[base]=f.glintPos[i*3];f.trailPos[base+1]=f.glintPos[i*3+1];f.trailPos[base+2]=f.glintPos[i*3+2];}
-        else{
-          f.trailPos[base]=fA.x+(fB.x-fA.x)*ff+f.glintJit[i*3]*.82;
-          f.trailPos[base+1]=fA.y+(fB.y-fA.y)*ff+f.glintJit[i*3+1]*.82;
-          f.trailPos[base+2]=fA.z+(fB.z-fA.z)*ff+f.glintJit[i*3+2]*.82;
-        }
-        f.trailPos[base+3]=bA.x+(bB.x-bA.x)*bf+f.glintJit[i*3]*.82;
-        f.trailPos[base+4]=bA.y+(bB.y-bA.y)*bf+f.glintJit[i*3+1]*.82;
-        f.trailPos[base+5]=bA.z+(bB.z-bA.z)*bf+f.glintJit[i*3+2]*.82;
-      }
     }
     f.glintGeo.attributes.position.needsUpdate=true;
-    f.trailGeo.attributes.position.needsUpdate=true;
     const breath=.5+.5*Math.sin(f.phase*1.8);
     f.glintMat.opacity=.68+.22*breath;
-    f.streamMat.opacity=.24+.22*breath;
-    f.trailMat.opacity=.14+.16*breath;
   }
 }
 
@@ -2356,9 +2300,10 @@ function loop(){
   }
   camera.lookAt(look);
 
-  /* long-exposure trails ONLY during star flight; crisp otherwise */
+  /* framebuffer feedback blur: moving particles leave a soft persistence wake;
+     warp travel lowers the fade for a longer exposure. */
   const speed=camera.position.distanceTo(prevPos);prevPos.copy(camera.position);
-  blurT=THREE.MathUtils.clamp(.85-WARPV*.8495,.0005,.85);  // mid-jump: ~99.95% kept = unbroken light lines
+  blurT=THREE.MathUtils.clamp(.64-WARPV*.6395,.0005,.64);
   if(WARPV>.5)blurT=.0005;                                 // full exposure through the heart of the jump
   blurOp+=(blurT-blurOp)*(1-Math.exp(-3.71*dt));
   if(reduced)renderer.clear();
