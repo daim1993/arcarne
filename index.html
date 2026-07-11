@@ -1500,6 +1500,10 @@ const flows=[];
 /* Path-driven streams keep a visible, continuous crawl. Their shader swirl is
    disabled below, so these rates are the only motion they contribute. */
 const FLOW_RATE=lowPower?.5:.9;
+function flowVortexPoint(x,y,z,time,rate,out){
+  const r=Math.hypot(x,z),a=time*rate/(r+80),c=Math.cos(a),s=Math.sin(a);
+  out.set(x*c-z*s,y+Math.sin(time*.8+r*.025)*2.4,x*s+z*c);return out;
+}
 function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   // open S-curve through space, so the stream reads as a passing comet ribbon
   const pts=[];
@@ -1576,20 +1580,22 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   streamAfterimages.forEach(a=>group.add(a.points));scene.add(group);
   flows.push({TAB,pos,us,jit,geo,speed,count,glintPos,glintUs,glintJit,glintGeo,glintMat,
     glintCount,particleTrails,streamAfterimages,group,historyPrimed:false,
+    vortexTime:Math.random()*Math.PI*2,vortexRate:24,vortexOut:new THREE.Vector3(),glintVortexOut:new THREE.Vector3(),
     volume,phase:Math.random()*Math.PI*2});
 }
 /* One authored stream, dense enough to read as a volumetric ribbon rather than
    eight competing loops. Gold carries the body, cyan marks the moving core. */
-makeFlow(0xe6cf8b,290,.34,.24,.010,5200,60);
+makeFlow(0xe6cf8b,290,.34,.24,.010,2800,60);
 function updateFlows(dt){
   for(const f of flows){
     const T=f.TAB,L=T.length-1;
+    f.vortexTime+=dt;
     for(let i=0;i<f.count;i++){
       let u=(f.us[i]+f.speed*dt*FLOW_RATE)%1;if(u>=.999999)u=0;f.us[i]=u;
       const x=u*L,i0=Math.min(L-1,x|0),fr=x-i0,A=T[i0],B=T[i0+1];
-      f.pos[i*3]  =A.x+(B.x-A.x)*fr+f.jit[i*3];
-      f.pos[i*3+1]=A.y+(B.y-A.y)*fr+f.jit[i*3+1];
-      f.pos[i*3+2]=A.z+(B.z-A.z)*fr+f.jit[i*3+2];
+      const px=A.x+(B.x-A.x)*fr+f.jit[i*3],py=A.y+(B.y-A.y)*fr+f.jit[i*3+1],pz=A.z+(B.z-A.z)*fr+f.jit[i*3+2];
+      flowVortexPoint(px,py,pz,f.vortexTime,f.vortexRate,f.vortexOut);
+      f.pos[i*3]=f.vortexOut.x;f.pos[i*3+1]=f.vortexOut.y;f.pos[i*3+2]=f.vortexOut.z;
       for(let trailIndex=0;trailIndex<f.particleTrails.length;trailIndex++){
         const trail=f.particleTrails[trailIndex],source=trailIndex===0?f.pos:f.particleTrails[trailIndex-1].pos;
         const p=i*3,follow=trail.follow;
@@ -1608,9 +1614,9 @@ function updateFlows(dt){
     for(let i=0;i<f.glintCount;i++){
       let u=(f.glintUs[i]+f.speed*dt*FLOW_RATE*1.05)%1;if(u>=.999999)u=0;f.glintUs[i]=u;
       const x=u*L,i0=Math.min(L-1,x|0),fr=x-i0,A=T[i0],B=T[i0+1];
-      f.glintPos[i*3]=A.x+(B.x-A.x)*fr+f.glintJit[i*3];
-      f.glintPos[i*3+1]=A.y+(B.y-A.y)*fr+f.glintJit[i*3+1];
-      f.glintPos[i*3+2]=A.z+(B.z-A.z)*fr+f.glintJit[i*3+2];
+      const gx=A.x+(B.x-A.x)*fr+f.glintJit[i*3],gy=A.y+(B.y-A.y)*fr+f.glintJit[i*3+1],gz=A.z+(B.z-A.z)*fr+f.glintJit[i*3+2];
+      flowVortexPoint(gx,gy,gz,f.vortexTime,f.vortexRate,f.glintVortexOut);
+      f.glintPos[i*3]=f.glintVortexOut.x;f.glintPos[i*3+1]=f.glintVortexOut.y;f.glintPos[i*3+2]=f.glintVortexOut.z;
       for(const after of f.streamAfterimages){
         const au=(u-after.offset+1)%1,ax=au*L,ai=Math.min(L-1,ax|0),af=ax-ai,AA=T[ai],AB=T[ai+1];
         after.pos[i*3]=AA.x+(AB.x-AA.x)*af+f.glintJit[i*3]*.82;
