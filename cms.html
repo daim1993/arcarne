@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#07080d">
+<title>Arcarne CMS · Universe Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Marcellus&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --void:#07080d;--deep:#0d0e14;--panel:#111218;--panel-hover:#171820;
+  --ink:#f0e9da;--muted:#aaa394;--faint:#7a7468;
+  --gold:#d8bd72;--gold-high:#ead99d;--bronze:#927141;--ruby:#a74f4d;
+  --line:rgba(216,189,114,.17);--line-strong:rgba(226,203,137,.47);
+  --display:'Marcellus',serif;--body:'Manrope',sans-serif;--mono:'Azeret Mono',monospace;
+  --ease-out:cubic-bezier(.22,1,.36,1);--ease-in-out:cubic-bezier(.65,0,.35,1)
+}
+@supports(color:oklch(50% 0 0)){
+  :root{
+    --void:oklch(7.5% .018 275);--deep:oklch(10.5% .020 275);--panel:oklch(13% .022 275 / .98);--panel-hover:oklch(17% .024 275 / .98);
+    --ink:oklch(93% .026 88);--muted:oklch(71% .030 86);--faint:oklch(57% .032 82);
+    --gold:oklch(80% .105 84);--gold-high:oklch(88% .072 88);--bronze:oklch(60% .075 74);--ruby:oklch(56% .145 25);
+    --line:oklch(79% .075 84 / .18);--line-strong:oklch(84% .085 84 / .46)
+  }
+}
+*{box-sizing:border-box}
+html{background:var(--void);scroll-behavior:smooth}
+body{min-height:100vh;margin:0;background:
+  radial-gradient(ellipse 72% 30% at 50% 0%,rgba(181,145,73,.08),transparent 72%),
+  linear-gradient(180deg,var(--void),var(--deep) 54%,var(--void));
+  color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;padding:42px clamp(18px,5vw,72px) 80px}
+body::before{content:"";position:fixed;inset:14px;z-index:20;border:1px solid var(--line);clip-path:polygon(0 22px,22px 0,calc(100% - 22px) 0,100% 22px,100% calc(100% - 22px),calc(100% - 22px) 100%,22px 100%,0 calc(100% - 22px));pointer-events:none}
+body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.16;background-image:
+  repeating-linear-gradient(90deg,transparent 0,transparent 119px,rgba(216,189,114,.045) 120px),
+  repeating-linear-gradient(0deg,transparent 0,transparent 119px,rgba(216,189,114,.035) 120px)}
+button,input,textarea,a{font:inherit}
+button,a,input,textarea,summary{outline:none}
+:focus-visible{box-shadow:0 0 0 1px var(--void),0 0 0 3px var(--gold-high)}
+.skip-link{position:fixed;left:24px;top:18px;z-index:50;transform:translateY(-160%);background:var(--gold);color:var(--void);padding:10px 14px;text-decoration:none;font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.12em}
+.skip-link:focus{transform:none}
+.page-shell{position:relative;z-index:1;width:min(1160px,100%);margin:0 auto}
+.masthead{text-align:center;padding:20px 0 34px}
+.masthead-kicker{display:flex;align-items:center;justify-content:center;gap:14px;color:var(--muted);font-family:var(--mono);font-size:.62rem;letter-spacing:.25em;text-transform:uppercase}
+.masthead-kicker::before,.masthead-kicker::after{content:"";width:clamp(34px,8vw,92px);height:1px;background:linear-gradient(90deg,transparent,var(--bronze))}
+.masthead-kicker::after{transform:scaleX(-1)}
+.masthead-sigil{display:block;width:142px;height:70px;margin:10px auto 2px;color:var(--gold);overflow:visible}
+.masthead-sigil path,.masthead-sigil rect,.masthead-sigil circle{vector-effect:non-scaling-stroke}
+h1{margin:0;font-family:var(--display);font-size:clamp(2.35rem,6vw,4.8rem);font-weight:400;line-height:.96;letter-spacing:.055em;text-transform:uppercase}
+h1 span{color:var(--gold)}
+.sub{max-width:640px;margin:14px auto 0;color:var(--faint);font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase}
+.command-bar{position:sticky;top:12px;z-index:10;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px;border:1px solid var(--line-strong);background:rgba(10,11,16,.97);box-shadow:0 14px 44px rgba(0,0,0,.34)}
+button,.btn{min-height:42px;border:1px solid var(--line);border-radius:0;background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:10px 17px;text-decoration:none;font-family:var(--mono);font-size:.64rem;font-weight:500;letter-spacing:.13em;text-transform:uppercase;transition:color 180ms ease,border-color 180ms ease,background-color 180ms ease,transform 120ms ease}
+button:active,.btn:active{transform:scale(.98)}
+.primary{border-color:var(--gold);background:var(--gold);color:var(--void);font-weight:600;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px)}
+.danger{margin-left:auto;color:var(--muted)}
+#status{min-width:170px;min-height:1.2em;align-self:center;color:var(--gold-high);font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;text-align:right}
+#status[data-state="error"]{color:var(--ruby)}
+.storage-note{display:flex;align-items:flex-start;gap:11px;margin:13px 2px 0;color:var(--faint);font-family:var(--mono);font-size:.63rem;letter-spacing:.035em}
+.storage-note::before{content:"";flex:0 0 7px;width:7px;height:7px;margin-top:.42em;border:1px solid var(--bronze);transform:rotate(45deg)}
+main{display:grid;gap:56px;margin-top:64px}
+.deco-section{scroll-margin-top:94px}
+.section-heading{display:grid;grid-template-columns:auto minmax(180px,auto) 1fr;align-items:center;gap:16px;margin-bottom:18px}
+.section-index{color:var(--gold);font-family:var(--display);font-size:1.05rem;letter-spacing:.08em}
+h2{margin:0;color:var(--ink);font-size:.92rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.section-rule{display:grid;grid-template-columns:1fr 7px;align-items:center;gap:11px;min-width:40px}
+.section-rule::before{content:"";height:1px;background:linear-gradient(90deg,var(--line-strong),transparent)}
+.section-rule::after{content:"";width:6px;height:6px;border:1px solid var(--bronze);transform:rotate(45deg)}
+.section-description{max-width:720px;margin:-4px 0 18px 42px;color:var(--faint);font-size:.82rem}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;padding:1px;background:var(--line);border:1px solid var(--line)}
+.set{min-width:0;background:var(--panel);padding:18px 18px 20px;transition:background-color 180ms ease}
+.set:focus-within{background:var(--panel-hover);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.set label{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:17px;color:var(--muted);font-family:var(--mono);font-size:.6rem;letter-spacing:.11em;text-transform:uppercase}
+.set output{color:var(--gold-high);font-size:.68rem;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:18px;margin:0;appearance:none;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:linear-gradient(90deg,var(--bronze),var(--line-strong));border:0}
+input[type=range]::-webkit-slider-thumb{width:12px;height:12px;margin-top:-5px;appearance:none;border:1px solid var(--gold-high);border-radius:0;background:var(--deep);box-shadow:0 0 0 2px var(--deep);transform:rotate(45deg)}
+input[type=range]::-moz-range-track{height:2px;background:var(--line-strong);border:0}
+input[type=range]::-moz-range-progress{height:2px;background:var(--bronze)}
+input[type=range]::-moz-range-thumb{width:10px;height:10px;border:1px solid var(--gold-high);border-radius:0;background:var(--deep);transform:rotate(45deg)}
+input[type=range]:focus-visible{box-shadow:none}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--deep),0 0 0 4px var(--gold-high)}
+.stars-list{display:grid;gap:8px}
+details{border:1px solid var(--line);background:var(--panel)}
+details[open]{border-color:var(--line-strong);background:var(--panel-hover)}
+summary{display:grid;grid-template-columns:42px minmax(0,1fr) auto 14px;align-items:center;gap:14px;min-height:56px;padding:11px 17px;cursor:pointer;list-style:none;transition:color 180ms ease,background-color 180ms ease}
+summary::-webkit-details-marker{display:none}
+.star-no{color:var(--gold);font-family:var(--display);font-size:.82rem;letter-spacing:.08em}
+.star-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.86rem;font-weight:600;letter-spacing:.025em}
+summary small{color:var(--faint);font-family:var(--mono);font-size:.57rem;font-weight:400;letter-spacing:.12em;text-transform:uppercase}
+.summary-mark{width:8px;height:8px;border:1px solid var(--bronze);transform:rotate(45deg);transition:background-color 180ms ease,transform 240ms var(--ease-out)}
+details[open] .summary-mark{background:var(--gold);transform:rotate(135deg)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px;border-top:1px solid var(--line);background:rgba(5,6,10,.34)}
+details[open] .fields{animation:fieldsReveal 260ms var(--ease-out) both}
+@keyframes fieldsReveal{from{opacity:0;transform:translateY(-5px)}}
+.fields .full{grid-column:1/-1}
+.fields label,.io-label{display:block;margin:0 0 6px;color:var(--faint);font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase}
+input[type=text],textarea{width:100%;min-height:42px;border:1px solid var(--line);border-radius:0;background:var(--deep);color:var(--ink);padding:10px 12px;font-family:var(--mono);font-size:.72rem;line-height:1.45;transition:border-color 180ms ease,background-color 180ms ease}
+textarea{min-height:76px;resize:vertical;font-family:var(--body);font-size:.8rem}
+input[type=text]::placeholder,textarea::placeholder{color:var(--faint);opacity:.68}
+input[type=text]:focus,textarea:focus{border-color:var(--gold);background:#0a0b10;box-shadow:inset 0 0 0 1px rgba(216,189,114,.16)}
+.io-wrap{position:relative;padding:18px;border:1px solid var(--line);background:var(--panel)}
+.io-wrap::before,.io-wrap::after{content:"";position:absolute;width:18px;height:18px;pointer-events:none}
+.io-wrap::before{left:-1px;top:-1px;border-left:1px solid var(--gold);border-top:1px solid var(--gold)}
+.io-wrap::after{right:-1px;bottom:-1px;border-right:1px solid var(--gold);border-bottom:1px solid var(--gold)}
+#io{min-height:170px;font-family:var(--mono);font-size:.67rem}
+.footer-mark{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:64px;color:var(--faint);font-family:var(--mono);font-size:.56rem;letter-spacing:.2em;text-transform:uppercase}
+.footer-mark::before,.footer-mark::after{content:"";width:44px;height:1px;background:var(--line-strong)}
+@media(hover:hover) and (pointer:fine){
+  button:hover,.btn:hover{border-color:var(--gold);color:var(--gold-high);background:var(--panel-hover)}
+  .primary:hover{background:var(--gold-high);color:var(--void)}
+  .danger:hover{border-color:var(--ruby);color:#e5a7a1}
+  .set:hover{background:var(--panel-hover)}
+  summary:hover{background:rgba(216,189,114,.035)}
+}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.danger{margin-left:0}#status{width:100%;text-align:left;padding:3px 7px}}
+@media(max-width:640px){
+  body{padding:24px 14px 54px}body::before{display:none}.masthead{padding-top:12px}.masthead-sigil{width:118px;height:58px}
+  .command-bar{top:6px;display:grid;grid-template-columns:1fr 1fr}.command-bar>*{width:100%}.danger{grid-column:1/-1;margin-left:0}#status{grid-column:1/-1;min-width:0}
+  main{gap:44px;margin-top:48px}.section-heading{grid-template-columns:auto minmax(0,1fr);gap:12px}.section-rule{grid-column:1/-1}.section-description{margin-left:0}
+  .grid{grid-template-columns:1fr}.fields{grid-template-columns:1fr;padding:14px}.fields .full{grid-column:auto}
+  summary{grid-template-columns:34px minmax(0,1fr) 12px;padding-inline:13px}summary small{display:none}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+<style id="cyan-accent">
+:root{--cyan:#63d3df;--cyan-high:#a3edf1}
+@supports(color:oklch(50% 0 0)){:root{--cyan:oklch(78% .13 202);--cyan-high:oklch(87% .09 202)}}
+:focus-visible{box-shadow:0 0 0 1px var(--void),0 0 0 3px var(--cyan-high)}
+h1 span{color:var(--cyan)}
+.masthead-kicker{color:var(--cyan)}
+.masthead-kicker::before,.masthead-kicker::after{background:linear-gradient(90deg,transparent,var(--cyan))}
+.storage-note::before{border-color:var(--cyan)}
+.section-rule::after{border-color:var(--cyan)}
+#status{color:var(--cyan-high)}
+button:hover,.btn:hover{border-color:var(--cyan);color:var(--cyan-high);background:var(--panel-hover)}
+.primary:hover{background:var(--gold-high);border-color:var(--cyan);color:var(--void)}
+.danger:hover{border-color:var(--ruby);color:#e5a7a1;background:var(--panel-hover)}
+.set:focus-within{box-shadow:inset 0 0 0 1px var(--cyan)}
+.set output{color:var(--cyan-high)}
+input[type=range]::-webkit-slider-runnable-track{background:linear-gradient(90deg,var(--cyan),var(--line-strong))}
+input[type=range]::-moz-range-progress{background:var(--cyan)}
+input[type=range]::-webkit-slider-thumb{border-color:var(--cyan-high)}
+input[type=range]::-moz-range-thumb{border-color:var(--cyan-high)}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--deep),0 0 0 4px var(--cyan-high)}
+details[open]{border-color:var(--cyan)}
+details[open] .summary-mark{background:var(--cyan)}
+input[type=text]:focus,textarea:focus{border-color:var(--cyan);box-shadow:inset 0 0 0 1px oklch(78% .13 202 / .16)}
+.io-wrap::after{border-color:var(--cyan)}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="page-shell">
+  <header class="masthead">
+    <div class="masthead-kicker">Universe control · System 01</div>
+    <svg class="masthead-sigil" viewBox="0 0 160 78" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1">
+      <path opacity=".45" d="M80 2v74M45 39h70"/>
+      <path d="M80 9 95 24 80 39 65 24 80 9Zm0 30 12 12-12 18-12-18 12-12Z"/>
+      <path d="M67 27 49 18 31 31 10 39h32l25-12Zm26 0 18-9 18 13 21 8h-32L93 27Z"/>
+      <path opacity=".65" d="M48 51 29 61H8m104-10 19 10h21"/>
+      <rect x="76" y="35" width="8" height="8" transform="rotate(45 80 39)"/>
+      <circle cx="8" cy="39" r="2"/><circle cx="152" cy="39" r="2"/>
+    </svg>
+    <h1>ARCARNE <span>CMS</span></h1>
+    <p class="sub">A precision console for the worlds, signals, and motion of the Arcarne universe</p>
+  </header>
+
+  <nav class="command-bar" aria-label="Configuration actions">
+    <button class="primary" type="button" onclick="save()">Save changes</button>
+    <a class="btn" href="index.html" target="_blank" rel="noopener" aria-label="Open Arcarne Universe in a new tab">Open universe ↗</a>
+    <button type="button" onclick="exportCfg()">Export</button>
+    <button type="button" onclick="importCfg()">Import</button>
+    <button class="danger" type="button" onclick="resetCfg()">Reset all</button>
+    <span id="status" role="status" aria-live="polite"></span>
+  </nav>
+  <p class="storage-note" id="storage-note">Saved in this browser's local storage. Open the universe in the same browser, or use Export and Import to move the configuration.</p>
+
+  <main id="main">
+    <section class="deco-section" aria-labelledby="settings-title">
+      <div class="section-heading">
+        <span class="section-index">01</span>
+        <h2 id="settings-title">Site parameters</h2>
+        <span class="section-rule" aria-hidden="true"></span>
+      </div>
+      <p class="section-description">Tune the universe's scale, density, camera, and atmosphere. Every value is bounded to a safe operating range.</p>
+      <div class="grid" id="settings"></div>
+    </section>
+
+    <section class="deco-section" aria-labelledby="stars-title">
+      <div class="section-heading">
+        <span class="section-index">02</span>
+        <h2 id="stars-title">Main stars · Content</h2>
+        <span class="section-rule" aria-hidden="true"></span>
+      </div>
+      <p class="section-description">Edit the fifteen primary signals. Empty project links remain hidden in the universe until they are populated.</p>
+      <div class="stars-list" id="stars"></div>
+    </section>
+
+    <section class="deco-section" aria-labelledby="transfer-title">
+      <div class="section-heading">
+        <span class="section-index">03</span>
+        <h2 id="transfer-title">Configuration transfer</h2>
+        <span class="section-rule" aria-hidden="true"></span>
+      </div>
+      <p class="section-description">Export a portable JSON record or paste a previously exported configuration and choose Import.</p>
+      <div class="io-wrap">
+        <label class="io-label" for="io">Configuration JSON</label>
+        <textarea id="io" spellcheck="false" placeholder="Your configuration appears here after Export. Paste JSON here before Import."></textarea>
+      </div>
+    </section>
+  </main>
+
+  <div class="footer-mark" aria-hidden="true">Arcarne control archive</div>
+</div>
+
+<script>
+/* Defaults mirror index.html. */
+const STAR_DEFAULTS=[
+ {id:'sentient',name:'Sentient by Elysian',tag:'Storyboard / Cinematic',meta:'2024–PRESENT · UAE',desc:'Cinematic boards turn abstract brand ideas into shots teams can see, align on, and produce.',chips:'Storyboards, Narrative, Cinematic'},
+ {id:'dewa',name:'DEWA Storyboard Collage',tag:'Visual Narrative',meta:'STORYBOARD DEVELOPMENT',desc:'Layered storyboard development turns utility messaging into a clear, sequential visual story.',chips:'Storyboards, Collage'},
+ {id:'gitex',name:'GITEX Motion Graphics',tag:'Campaign Motion',meta:'EVENT MOTION DESIGN',desc:'High-energy motion language designed for the scale, pace, and attention of a major technology stage.',chips:'Motion, Campaign'},
+ {id:'rampage',name:'RampageRally',tag:'Game-style Concept',meta:'CINEMATIC CONCEPT',desc:'A game-inspired visual concept built from speed, grit, kinetic framing, and a camera that never feels parked.',chips:'3D, Game Art'},
+ {id:'chasm',name:"Chasm's Call",tag:'Fantasy / Atmosphere',meta:'WORLD-BUILDING',desc:'Atmospheric fantasy world-building shaped through mood, depth, and cinematic scale.',chips:'Environment, 3D'},
+ {id:'nova',name:'1UP Nova: Afterland Key',tag:'Web3 / Metaverse',meta:'2020–2023 · USA',desc:'3D, NFT, and metaverse assets for immersive digital ownership worlds.',chips:'Web3, NFT, 3D'},
+ {id:'patata',name:'Patata Characters',tag:'Character Design',meta:'CHARACTER SYSTEMS',desc:'Character systems with personality, designed to move, emote, and stay in memory.',chips:'Characters, Animation'},
+ {id:'motionrd',name:'Advanced Motion Techniques',tag:'Motion R&D',meta:'CONTINUOUS PRACTICE',desc:'Motion practice and technical refinement: the laboratory behind every finished frame.',chips:'R&D, Motion'},
+ {id:'watch',name:'Watch Avenue',tag:'Journey · Content Creator',meta:'2022–2024 · UAE',desc:'Content creation and campaign visuals for luxury timepieces.',chips:'Content'},
+ {id:'7g',name:'7G Media',tag:'Journey · Motion Designer',meta:'2021–2022 · UAE',desc:'Motion design for engagement and brand visibility.',chips:'Motion'},
+ {id:'jump',name:'Jump.sa',tag:'Journey · Motion Designer',meta:'2019–2022 · KSA',desc:'Motion design for Saudi digital content.',chips:'Motion'},
+ {id:'artdim',name:'Art Dimension',tag:'Journey · Motion Designer',meta:'2016–2019 · KSA',desc:'Where it began: motion design and 2D/3D hybrid storytelling.',chips:'2D/3D'},
+ {id:'mind',name:'The Logic Core',tag:'Foundation',meta:'BSc ACTUARIAL SCIENCE · IFoA',desc:'Mathematics, statistics, risk simulation, and predictive analytics form the engine under every creative decision.',chips:'Actuarial, Statistics, Python, R'},
+ {id:'toolkit',name:'Toolkit Nebula',tag:'Arsenal',meta:'16+ TOOLS · 4 ORBITS',desc:'The full arsenal lives in constellations around you. Explore the tools by discipline.',chips:'Motion, 3D, Design, Data'},
+ {id:'contact',name:'The Portal',tag:'Contact',meta:'DUBAI · UAE · OPEN FOR PROJECTS',desc:'Ready to build a visual world around your idea? Send a brief, request a storyboard, or start with a motion/3D concept.',chips:'Motion, 3D, Storyboards'},
+];
+const SETTINGS=[
+ ['panelW','Popup width (px)',240,560,330,1],
+ ['panelZoom','Popup zoom',0.7,1.6,1,.05],
+ ['particles','Particle amount ×',0.25,2,1,.05],
+ ['swirl','Vortex spin speed',0,20,5,.5],
+ ['arms','Vortex arms',2,10,4,1],
+ ['wind','Arm winding',1,9,5.4,.2],
+ ['hole','Vortex eye radius',80,420,260,10],
+ ['sat','Color saturation',0.8,2,1.35,.05],
+ ['cometF','Comet rarity ×',0.3,4,1,.1],
+ ['ripple','Mouse ripple power',0,3,1,.1],
+ ['flySec','Fly duration (s)',1,6,3.2,.1],
+ ['sfx','Sound on start',0,1,0,1],
+];
+const KEY='arcarne_cfg';
+let cfg={};
+try{cfg=JSON.parse(localStorage.getItem(KEY))||{}}catch(error){cfg={}}
+if(!cfg.stars||typeof cfg.stars!=='object'||Array.isArray(cfg.stars))cfg.stars={};
+
+const entities={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+function esc(value){return String(value??'').replace(/[&<>"']/g,char=>entities[char])}
+
+/* Build settings UI. */
+const settingsWrap=document.getElementById('settings');
+SETTINGS.forEach(([key,label,min,max,def,step],index)=>{
+  const value=cfg[key]??def;
+  const item=document.createElement('div');
+  item.className='set';item.style.setProperty('--i',index);
+  item.innerHTML=`<label for="s_${key}"><span>${label}</span><output id="o_${key}" for="s_${key}">${value}</output></label>
+  <input type="range" id="s_${key}" min="${min}" max="${max}" step="${step}" value="${value}"
+   oninput="document.getElementById('o_${key}').textContent=this.value">`;
+  settingsWrap.appendChild(item);
+});
+
+/* Build stars UI. */
+const starsWrap=document.getElementById('stars');
+STAR_DEFAULTS.forEach((star,index)=>{
+  const value=Object.assign({},star,cfg.stars[star.id]||{});
+  const item=document.createElement('details');
+  item.style.setProperty('--i',index);
+  item.innerHTML=`<summary><span class="star-no">${String(index+1).padStart(2,'0')}</span><span class="star-name">${esc(value.name)}</span><small>${esc(star.id)}</small><span class="summary-mark" aria-hidden="true"></span></summary>
+  <div class="fields">
+    <div><label for="${star.id}_name">Name</label><input type="text" id="${star.id}_name" value="${esc(value.name)}"></div>
+    <div><label for="${star.id}_tag">Tag</label><input type="text" id="${star.id}_tag" value="${esc(value.tag)}"></div>
+    <div class="full"><label for="${star.id}_meta">Meta line</label><input type="text" id="${star.id}_meta" value="${esc(value.meta)}"></div>
+    <div class="full"><label for="${star.id}_desc">Description</label><textarea id="${star.id}_desc">${esc(value.desc)}</textarea></div>
+    <div class="full"><label for="${star.id}_chips">Chips (comma separated)</label><input type="text" id="${star.id}_chips" value="${esc(value.chips)}"></div>
+    <div class="full"><label for="${star.id}_img">Image URL (shown in popup)</label><input type="text" id="${star.id}_img" value="${esc(value.img)}" placeholder="https://example.com/image.webp"></div>
+    <div class="full"><label for="${star.id}_vid">Video URL (YouTube, Vimeo, or MP4; overrides image)</label><input type="text" id="${star.id}_vid" value="${esc(value.vid)}" placeholder="https://youtu.be/... or video.mp4"></div>
+    <div><label for="${star.id}_b1l">Button 1 label</label><input type="text" id="${star.id}_b1l" value="${esc(value.b1l)}" placeholder="View project"></div>
+    <div><label for="${star.id}_b1u">Button 1 link</label><input type="text" id="${star.id}_b1u" value="${esc(value.b1u)}" placeholder="https://behance.net/..."></div>
+    <div><label for="${star.id}_b2l">Button 2 label</label><input type="text" id="${star.id}_b2l" value="${esc(value.b2l)}"></div>
+    <div><label for="${star.id}_b2u">Button 2 link</label><input type="text" id="${star.id}_b2u" value="${esc(value.b2u)}"></div>
+    <div><label for="${star.id}_b3l">Button 3 label</label><input type="text" id="${star.id}_b3l" value="${esc(value.b3l)}"></div>
+    <div><label for="${star.id}_b3u">Button 3 link</label><input type="text" id="${star.id}_b3u" value="${esc(value.b3u)}"></div>
+  </div>`;
+  starsWrap.appendChild(item);
+});
+
+function collect(){
+  const output={stars:{}};
+  SETTINGS.forEach(([key])=>output[key]=parseFloat(document.getElementById('s_'+key).value));
+  STAR_DEFAULTS.forEach(star=>{
+    const get=field=>document.getElementById(star.id+'_'+field).value;
+    const record={name:get('name'),tag:get('tag'),meta:get('meta'),desc:get('desc'),chips:get('chips'),
+      img:get('img'),vid:get('vid'),b1l:get('b1l'),b1u:get('b1u'),b2l:get('b2l'),b2u:get('b2u'),b3l:get('b3l'),b3u:get('b3u')};
+    const defaults={name:star.name,tag:star.tag,meta:star.meta,desc:star.desc,chips:star.chips,
+      img:'',vid:'',b1l:'',b1u:'',b2l:'',b2u:'',b3l:'',b3u:''};
+    if(JSON.stringify(record)!==JSON.stringify(defaults))output.stars[star.id]=record;
+  });
+  return output;
+}
+function save(){
+  cfg=collect();
+  localStorage.setItem(KEY,JSON.stringify(cfg));
+  flash('Saved · reload the universe tab');
+}
+function exportCfg(){
+  document.getElementById('io').value=JSON.stringify(collect(),null,1);
+  flash('Export ready below');
+}
+function importCfg(){
+  try{
+    const value=JSON.parse(document.getElementById('io').value);
+    if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Configuration must be an object');
+    localStorage.setItem(KEY,JSON.stringify(value));
+    flash('Imported · reloading console');
+    setTimeout(()=>location.reload(),700);
+  }catch(error){flash('Invalid configuration JSON','error')}
+}
+function resetCfg(){
+  if(!confirm('Reset all customizations to defaults?'))return;
+  localStorage.removeItem(KEY);flash('Reset complete');setTimeout(()=>location.reload(),500);
+}
+let flashTimer;
+function flash(message,state='success'){
+  const status=document.getElementById('status');
+  clearTimeout(flashTimer);status.textContent=message;status.dataset.state=state;
+  flashTimer=setTimeout(()=>{status.textContent='';delete status.dataset.state},3500);
+}
+</script>
+</body>
+</html>
