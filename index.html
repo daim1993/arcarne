@@ -1500,7 +1500,9 @@ const flows=[];
 /* Streams are deliberately glacial, like illuminated dust caught in an orbit.
    Updating every frame keeps the slower motion smooth while the rate cap leaves
    enough room for the main vortex, stars, and dossier reveal to stay responsive. */
-const FLOW_RATE=lowPower?.22:.34;
+/* The flow should read as a slow orbit, not a screensaver. Desktop stays at
+   roughly one quarter of the previous pace, with an even gentler mobile rate. */
+const FLOW_RATE=lowPower?.045:.08;
 function makeFlow(color,radius,tiltZ,tiltX,speed,count){
   // closed wavy loop path through space
   const pts=[];
@@ -1576,7 +1578,7 @@ function updateFlows(dt){
     f.geo.attributes.position.needsUpdate=true;
     f.phase+=dt;
     for(let i=0;i<f.glintCount;i++){
-      let u=(f.glintUs[i]+f.speed*dt*FLOW_RATE*1.08)%1;if(u>=.999999)u=0;f.glintUs[i]=u;
+      let u=(f.glintUs[i]+f.speed*dt*FLOW_RATE*1.02)%1;if(u>=.999999)u=0;f.glintUs[i]=u;
       const x=u*L,i0=Math.min(L-1,x|0),fr=x-i0,A=T[i0],B=T[i0+1];
       f.glintPos[i*3]=A.x+(B.x-A.x)*fr+f.glintJit[i*3];
       f.glintPos[i*3+1]=A.y+(B.y-A.y)*fr+f.glintJit[i*3+1];
