@@ -1182,7 +1182,7 @@ DATA.forEach(d=>{
 
 /* ============ sacred-geometry sigils — 4 distinct structures, path-draw entry ============ */
 const sigil=new THREE.Group();sigil.visible=false;scene.add(sigil);
-let sigilOp=0,sigilTarget=0,sigilBorn=-99,sigilVar=0;
+let sigilOp=0,sigilTarget=0,sigilBorn=-99,sigilVar=0,sigilSettleTimer=0;
 const SIGL=[]; // {obj,variant,mode,base,role,tier,spin,delay,dur,total}
 {
   const SIGIL_COLOR={gold:0xe6cf8b,cyan:0x62d5e4,pearl:0xf3ead7,bronze:0x9f7747};
@@ -2112,6 +2112,17 @@ function setPanelOpen(open){
   panel.classList.toggle('open',open);panel.setAttribute('aria-hidden',String(!open));panel.inert=!open;
   if(open)panel.scrollTop=0;
 }
+function hideSigilNow(){
+  clearTimeout(sigilSettleTimer);sigilSettleTimer=0;
+  sigilTarget=0;sigilOp=0;sigilBorn=-99;sigil.visible=false;
+}
+function revealSigilWithPanel(d){
+  if(reduced){hideSigilNow();return;}
+  applySigilStyle(d);
+  sigilOp=0;sigilTarget=1;sigilBorn=clock.getElapsedTime()+.02;
+  clearTimeout(sigilSettleTimer);
+  sigilSettleTimer=setTimeout(()=>{if(focused===d)sigilTarget=.46;},1120);
+}
 function flyTo(d){
   if(!d||!d.pos||!d.grp)return;
   dismissIntro();markVisited(d);
@@ -2120,16 +2131,17 @@ function flyTo(d){
   const off=p.clone().sub(camera.position).normalize().multiplyScalar(-(d.size*4+16));
   const duration=CFG.flySec*1000;
   setPanelOpen(false);fillPanel(d);armFX=!reduced;
-  if(!reduced){applySigilStyle(d);sigilTarget=1;sigilBorn=clock.getElapsedTime()+.04;}
-  else sigilTarget=0;
+  hideSigilNow();
   back.classList.add('show');hint.style.opacity=0;
   clearTimeout(panel._t);
   tweenTo(p.clone().add(off).add(new THREE.Vector3(d.size*1.2,d.size*.5,0)),p,duration,()=>{
-    if(focused!==d)return;setPanelOpen(true);sigilTarget=.46;sfx.open();srLive.textContent=`Arrived at ${d.name}. ${d.desc}`;
+    if(focused!==d)return;setPanelOpen(true);
+    if(!reduced&&armFX){armFX=false;arrivalFX(d);}
+    revealSigilWithPanel(d);sfx.open();srLive.textContent=`Arrived at ${d.name}. ${d.desc}`;
   });
 }
 function goHome(){
-  const hadFocus=Boolean(focused);focused=null;armFX=false;if(hadFocus)sfx.home();sigilTarget=0;
+  const hadFocus=Boolean(focused);focused=null;armFX=false;if(hadFocus)sfx.home();hideSigilNow();
   clearTimeout(panel._t);
   const home=sphPos(tSph,new THREE.Vector3());       // return to current orbit angle
   tweenTo(home,pivot.clone(),2600);
@@ -2268,9 +2280,7 @@ function loop(){
       WARPV=Math.sin(e*Math.PI);
       WDIR.copy(activeAnim.p1).sub(activeAnim.p0).normalize();
     }
-    if(k>=1){anim=null;WARPV=0;
-      if(focused&&armFX){armFX=false;arrivalFX(focused);}
-      activeAnim.onDone?.();}
+    if(k>=1){anim=null;WARPV=0;activeAnim.onDone?.();}
   }else if(focused){
     camera.position.lerp(camTarget,reduced?1:1-Math.exp(-1.22*dt));
     look.lerp(lookTarget,reduced?1:1-Math.exp(-1.83*dt));
