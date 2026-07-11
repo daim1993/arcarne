@@ -1498,8 +1498,9 @@ const spirals=[];
 /* ============ flowing particle streams ============ */
 const flows=[];
 /* Path-driven streams keep a visible, continuous crawl. Their shader swirl is
-   disabled below, so this rate is the only motion they contribute. */
-const FLOW_RATE=lowPower?.12:.24;
+   disabled below, so these rates are the only motion they contribute. */
+const FLOW_RATE=lowPower?.5:.9;
+const STREAM_RATE=lowPower?1.2:2.2;
 function makeFlow(color,radius,tiltZ,tiltX,speed,count){
   // closed wavy loop path through space
   const pts=[];
@@ -1539,6 +1540,12 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count){
     transparent:true,opacity:.72,blending:THREE.AdditiveBlending,depthWrite:false});
   glowify(glintMat,0);
   const glints=new THREE.Points(glintGeo,glintMat);
+  /* A moving, high-contrast ribbon makes the stream itself travel with the
+     particles. It is only a short arc of the loop, never a static full ring. */
+  const streamCount=56,streamPos=new Float32Array(streamCount*3);
+  const streamGeo=new THREE.BufferGeometry(),streamAttr=new THREE.BufferAttribute(streamPos,3);
+  streamAttr.setUsage(THREE.DynamicDrawUsage);streamGeo.setAttribute('position',streamAttr);
+  streamGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),radius+200);
   /* Feedback tails: three paired afterimages per tracer. LineSegments avoids
      connecting unrelated particles, so each independent stream keeps its own
      readable wake. */
@@ -1547,12 +1554,16 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count){
   trailAttr.setUsage(THREE.DynamicDrawUsage);trailGeo.setAttribute('position',trailAttr);
   trailGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),radius+200);
   const trailColor=(color===0x62d5e4||color===0x9beef0||color===0x3aaec4)?0x62d5e4:0xe6cf8b;
+  const streamMat=new THREE.LineBasicMaterial({color:trailColor,transparent:true,opacity:.28,
+    blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false});
+  const stream=new THREE.Line(streamGeo,streamMat);stream.renderOrder=-1;
   const trailMat=new THREE.LineBasicMaterial({color:trailColor,transparent:true,opacity:.2,
     blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false});
   const trail=new THREE.LineSegments(trailGeo,trailMat);trail.renderOrder=-1;
-  const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body,trail,glints);scene.add(group);
+  const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body,stream,trail,glints);scene.add(group);
   flows.push({TAB,pos,us,jit,geo,speed,count,glintPos,glintUs,glintJit,glintGeo,glintMat,
-    glintCount,trailPos,trailGeo,trailMat,trail,phase:Math.random()*Math.PI*2});
+    glintCount,streamCount,streamPos,streamGeo,streamMat,stream,streamU:Math.random(),trailPos,trailGeo,trailMat,trail,
+    phase:Math.random()*Math.PI*2});
 }
 makeFlow(0x62d5e4,300,.4,.2,.010,1800);
 makeFlow(0xe6cf8b,380,-.3,.5,.007,1800);
@@ -1565,6 +1576,15 @@ makeFlow(0xe6cf8b,460,-.45,.15,.005,1800);
 function updateFlows(dt){
   for(const f of flows){
     const T=f.TAB,L=T.length-1;
+    f.streamU=(f.streamU+f.speed*dt*STREAM_RATE)%1;
+    const streamSpan=.11;
+    for(let si=0;si<f.streamCount;si++){
+      const su=(f.streamU+si/(f.streamCount-1)*streamSpan)%1,sx=su*L,s0=Math.min(L-1,sx|0),sf=sx-s0,A=T[s0],B=T[s0+1];
+      f.streamPos[si*3]=A.x+(B.x-A.x)*sf;
+      f.streamPos[si*3+1]=A.y+(B.y-A.y)*sf;
+      f.streamPos[si*3+2]=A.z+(B.z-A.z)*sf;
+    }
+    f.streamGeo.attributes.position.needsUpdate=true;
     for(let i=0;i<f.count;i++){
       let u=(f.us[i]+f.speed*dt*FLOW_RATE)%1;if(u>=.999999)u=0;f.us[i]=u;
       const x=u*L,i0=Math.min(L-1,x|0),fr=x-i0,A=T[i0],B=T[i0+1];
@@ -1595,6 +1615,7 @@ function updateFlows(dt){
     f.trailGeo.attributes.position.needsUpdate=true;
     const breath=.5+.5*Math.sin(f.phase*1.8);
     f.glintMat.opacity=.5+.24*breath;
+    f.streamMat.opacity=.16+.16*breath;
     f.trailMat.opacity=.1+.13*breath;
   }
 }
