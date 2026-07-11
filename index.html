@@ -1528,16 +1528,18 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   /* TouchDesigner-style feedback: every particle owns a fading history of its
      previous rendered positions. The history is eased toward the live particle
      so the wake follows bends organically instead of drawing a fixed trail. */
-  const particleTrails=[],PARTICLE_TRAIL_STEPS=lowPower?6:14;
+  const particleTrails=[],PARTICLE_TRAIL_STEPS=lowPower?8:18;
   for(let step=0;step<PARTICLE_TRAIL_STEPS;step++){
     const trailPos=new Float32Array(count*3),trailGeo=new THREE.BufferGeometry();
     trailGeo.setAttribute('position',new THREE.BufferAttribute(trailPos,3));
     trailGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
-    const baseOpacity=.06*Math.pow(.84,step),trailColor=step%3===0?0xe6cf8b:0x73e0e8;
-    const trailMat=new THREE.PointsMaterial({size:2.5+step*.08,map:TEX,color:trailColor,
+    const glowing=step===0||step===8||step===16;
+    const baseOpacity=(glowing?.075:.055)*Math.pow(.86,step),trailColor=step%3===0?0xe6cf8b:0x73e0e8;
+    const trailMat=new THREE.PointsMaterial({size:(glowing?3.4:2.4)+step*.07,map:TEX,color:trailColor,
       transparent:true,opacity:baseOpacity,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false});
+    if(glowing)glowify(trailMat,0);
     const trail=new THREE.Points(trailGeo,trailMat);trail.renderOrder=2;
-    particleTrails.push({pos:trailPos,geo:trailGeo,points:trail,follow:.34*Math.pow(.96,step),baseOpacity});
+    particleTrails.push({pos:trailPos,geo:trailGeo,points:trail,follow:.32*Math.pow(.94,step),baseOpacity});
   }
 
   /* Sparse, brighter tracer particles make selected stream sections read as
