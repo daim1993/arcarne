@@ -1543,16 +1543,17 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   /* Long feedback-like afterimages stay particle-only. Each layer samples the
      same moving phase farther behind the glint, producing a soft extended wake
      without a spline or line geometry. */
-  const streamAfterimages=[],AFTER_STEPS=10;
+  const streamAfterimages=[],AFTER_STEPS=18;
   for(let step=0;step<AFTER_STEPS;step++){
     const afterPos=new Float32Array(glintCount*3),afterGeo=new THREE.BufferGeometry();
     afterGeo.setAttribute('position',new THREE.BufferAttribute(afterPos,3));
     afterGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
-    const baseOpacity=.16*Math.pow(.72,step);
-    const afterMat=new THREE.PointsMaterial({size:3.2+step*.12,map:TEX,color:0x73e0e8,
-      transparent:true,opacity:baseOpacity,blending:THREE.AdditiveBlending,depthWrite:false});
-    const after=new THREE.Points(afterGeo,afterMat);after.renderOrder=-1;
-    streamAfterimages.push({pos:afterPos,geo:afterGeo,points:after,offset:.014+step*.014,baseOpacity});
+    const baseOpacity=.22*Math.pow(.84,step);
+    const afterColor=step%4===0?0xe6cf8b:0x73e0e8;
+    const afterMat=new THREE.PointsMaterial({size:4.4+step*.16,map:TEX,color:afterColor,
+      transparent:true,opacity:baseOpacity,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false});
+    const after=new THREE.Points(afterGeo,afterMat);after.renderOrder=3;
+    streamAfterimages.push({pos:afterPos,geo:afterGeo,points:after,offset:.018+step*.018,baseOpacity});
   }
   const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body,glints);
   streamAfterimages.forEach(a=>group.add(a.points));scene.add(group);
