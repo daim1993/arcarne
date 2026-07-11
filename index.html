@@ -1183,15 +1183,18 @@ DATA.forEach(d=>{
 /* ============ sacred-geometry sigils — 4 distinct structures, path-draw entry ============ */
 const sigil=new THREE.Group();sigil.visible=false;scene.add(sigil);
 let sigilOp=0,sigilTarget=0,sigilBorn=-99,sigilVar=0;
-const SIGL=[]; // {obj,variant,mode,base,spin,delay,dur,total}
+const SIGL=[]; // {obj,variant,mode,base,role,tier,spin,delay,dur,total}
 {
-  const MAT=()=>new THREE.LineBasicMaterial({color:0xe6cf8b,transparent:true,
-    opacity:0,blending:THREE.AdditiveBlending,depthWrite:false});
-  const mk=(pts,segs)=>{const g2=new THREE.BufferGeometry().setFromPoints(pts);
-    const o=segs?new THREE.LineSegments(g2,MAT()):new THREE.Line(g2,MAT());
+  const SIGIL_COLOR={gold:0xe6cf8b,cyan:0x62d5e4,pearl:0xf3ead7,bronze:0x9f7747};
+  const MAT=(role='gold')=>new THREE.LineBasicMaterial({color:SIGIL_COLOR[role]||SIGIL_COLOR.gold,transparent:true,
+    opacity:0,blending:role==='cyan'||role==='pearl'?THREE.AdditiveBlending:THREE.NormalBlending,
+    depthWrite:false,depthTest:false,toneMapped:false});
+  const mk=(pts,segs,role='gold')=>{const g2=new THREE.BufferGeometry().setFromPoints(pts);
+    const o=segs?new THREE.LineSegments(g2,MAT(role)):new THREE.Line(g2,MAT(role));
     o.userData.total=pts.length;return o;};
-  const L=(variant,obj,mode,base)=>{sigil.add(obj);
-    SIGL.push({obj,variant,mode,base,spin:.002,delay:0,dur:.8,total:obj.userData.total});};
+  const L=(variant,obj,mode,base,role='gold',tier=0)=>{obj.material.color.setHex(SIGIL_COLOR[role]||SIGIL_COLOR.gold);
+    obj.material.blending=role==='cyan'||role==='pearl'?THREE.AdditiveBlending:THREE.NormalBlending;obj.renderOrder=7;sigil.add(obj);
+    SIGL.push({obj,variant,mode,base,role,tier,spin:0,startRotation:0,settledRotation:0,delay:0,dur:.8,total:obj.userData.total});};
   const circle=r=>{const p=[];for(let i=0;i<=96;i++){const a=i/96*Math.PI*2;
     p.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0));}return mk(p,false);};
   const dashes=(r,n,frac)=>{const p=[];for(let i=0;i<n;i++){
@@ -1257,57 +1260,101 @@ const SIGL=[]; // {obj,variant,mode,base,spin,delay,dur,total}
     for(const sx of[-1,1]){seg(sx*.62,-.72,sx*.62,.7);seg(sx*.62,.7,sx*.5,.9);seg(sx*.5,.9,sx*.38,.7);seg(sx*.38,.7,sx*.38,-.72);seg(sx*.38,-.72,sx*.62,-.72);}return mk(p,true);};
   const cornerFans=R=>{const p=[],seg=(x1,y1,x2,y2)=>p.push(new THREE.Vector3(x1*R,y1*R,0),new THREE.Vector3(x2*R,y2*R,0));
     for(const sx of[-1,1])for(const sy of[-1,1])for(let i=0;i<3;i++)seg(sx*.62,sy*.62,sx*(.82+i*.12),sy*(.62+i*.1));return mk(p,true);};
+  const brackets=R=>{const p=[],seg=(x1,y1,x2,y2)=>p.push(new THREE.Vector3(x1*R,y1*R,0),new THREE.Vector3(x2*R,y2*R,0));
+    for(const sx of[-1,1])for(const sy of[-1,1]){
+      seg(sx*.68,sy*.98,sx*.9,sy*.98);seg(sx*.9,sy*.98,sx*.98,sy*.9);seg(sx*.98,sy*.9,sx*.98,sy*.68);
+      seg(sx*.72,sy*.86,sx*.84,sy*.86);seg(sx*.86,sy*.84,sx*.86,sy*.72);
+    }return mk(p,true);};
+  const crowns=R=>{const p=[],seg=(x1,y1,x2,y2)=>p.push(new THREE.Vector3(x1*R,y1*R,0),new THREE.Vector3(x2*R,y2*R,0));
+    for(const sy of[-1,1]){
+      seg(-.55,sy*.72,-.3,sy*.72);seg(-.3,sy*.72,-.3,sy*.84);seg(-.3,sy*.84,-.12,sy*.84);
+      seg(-.12,sy*.84,0,sy*1.02);seg(0,sy*1.02,.12,sy*.84);seg(.12,sy*.84,.3,sy*.84);
+      seg(.3,sy*.84,.3,sy*.72);seg(.3,sy*.72,.55,sy*.72);
+    }return mk(p,true);};
+  const jewelAxis=R=>{const p=[],seg=(x1,y1,x2,y2)=>p.push(new THREE.Vector3(x1*R,y1*R,0),new THREE.Vector3(x2*R,y2*R,0));
+    for(const y of[-.58,-.3,0,.3,.58]){const s=y?.035:.06;
+      seg(0,y+s,s,y);seg(s,y,0,y-s);seg(0,y-s,-s,y);seg(-s,y,0,y+s);
+      if(y)seg(-.12,y,.12,y);
+    }return mk(p,true);};
+  const sideRails=R=>{const p=[],seg=(x1,y1,x2,y2)=>p.push(new THREE.Vector3(x1*R,y1*R,0),new THREE.Vector3(x2*R,y2*R,0));
+    for(const sx of[-1,1])for(const sy of[-1,1]){
+      seg(sx*.18,sy*.16,sx*.34,sy*.32);seg(sx*.34,sy*.32,sx*.55,sy*.32);
+      seg(sx*.55,sy*.32,sx*.68,sy*.45);seg(sx*.68,sy*.45,sx*.91,sy*.45);
+    }return mk(p,true);};
   /* V0 — ORBITS: sunburst heart, moons, engraved rings */
-  L(0,steppedFrame(1),'draw',.48);L(0,steppedFrame(.82),'draw',.28);L(0,axis(1.2),'draw',.5);
-  L(0,burst(.08,.42,16),'draw',.5);L(0,poly(.52,4),'bloom',.4);L(0,wings(1.06),'draw',.38);
-  L(0,ticks(.94,1.05,8),'spin',.28);L(0,diamonds(.68,4,.035),'bloom',.35);
+  L(0,steppedFrame(1),'draw',.5,'gold',0);L(0,steppedFrame(.82),'draw',.24,'bronze',1);L(0,axis(1.2),'draw',.58,'pearl',1);
+  L(0,burst(.08,.42,16),'draw',.46,'gold',2);L(0,poly(.52,4),'bloom',.42,'cyan',2);L(0,wings(1.06),'draw',.4,'gold',2);
+  L(0,ticks(.94,1.05,8),'spin',.25,'bronze',3);L(0,diamonds(.68,4,.035),'bloom',.42,'cyan',3);
+  L(0,crowns(1.05),'draw',.32,'pearl',2);L(0,brackets(1.1),'draw',.28,'gold',3);L(0,jewelAxis(.9),'draw',.55,'cyan',3);
+  L(0,steppedFrame(1),'trace',1,'cyan',4);L(0,wings(1.06),'trace',.9,'pearl',4);
   /* V1 — LOTUS: layered petals, burst core, moon pair */
-  L(1,chevrons(.92),'draw',.55);L(1,steppedFrame(1.04),'draw',.38);L(1,poly(.76,4,Math.PI/4),'bloom',.4);
-  L(1,wings(1.08),'draw',.42);L(1,axis(1.16),'drop',.42);L(1,cornerFans(1),'draw',.3);
-  L(1,ticks(.9,1,8),'spin',.28);L(1,poly(.2,4),'bloom',.5);
+  L(1,chevrons(.92),'draw',.56,'gold',0);L(1,steppedFrame(1.04),'draw',.4,'gold',1);L(1,poly(.76,4,Math.PI/4),'bloom',.32,'bronze',2);
+  L(1,wings(1.08),'draw',.44,'pearl',1);L(1,axis(1.16),'drop',.5,'gold',1);L(1,cornerFans(1),'draw',.3,'bronze',3);
+  L(1,ticks(.9,1,8),'spin',.24,'gold',3);L(1,poly(.2,4),'bloom',.62,'cyan',3);L(1,sideRails(1.05),'draw',.44,'gold',2);
+  L(1,crowns(1.02),'draw',.36,'cyan',2);L(1,jewelAxis(.94),'draw',.48,'pearl',3);
+  L(1,chevrons(.92),'trace',1,'cyan',4);L(1,sideRails(1.05),'trace',.82,'pearl',4);
   /* V2 — CRYSTAL: nested diamonds, cross rays, jeweled ring */
-  L(2,poly(1,4),'bloom',.48);L(2,poly(.76,4,Math.PI/4),'bloom',.38);L(2,poly(.52,4),'bloom',.35);
-  L(2,steppedFrame(1.08),'draw',.35);L(2,axis(1.28),'draw',.5);L(2,cornerFans(1.05),'drop',.35);
-  L(2,diamonds(.88,8,.025),'spin',.32);L(2,dashes(1.18,8,.42),'draw',.28);
+  L(2,poly(1,4),'bloom',.5,'gold',0);L(2,poly(.76,4,Math.PI/4),'bloom',.35,'bronze',1);L(2,poly(.52,4),'bloom',.48,'cyan',2);
+  L(2,steppedFrame(1.08),'draw',.38,'gold',1);L(2,axis(1.28),'draw',.55,'pearl',1);L(2,cornerFans(1.05),'drop',.3,'gold',2);
+  L(2,diamonds(.88,8,.025),'spin',.36,'cyan',3);L(2,dashes(1.18,8,.42),'draw',.26,'bronze',3);
+  L(2,brackets(1.12),'draw',.34,'gold',2);L(2,jewelAxis(.98),'draw',.54,'cyan',3);L(2,sideRails(.9),'draw',.32,'pearl',3);
+  L(2,poly(1,4),'trace',1,'cyan',4);L(2,brackets(1.12),'trace',.8,'pearl',4);
   /* V3 — RUNES: dense glyph script, arcs, sun rays */
-  L(3,obelisks(1.05),'draw',.55);L(3,wings(1.08),'draw',.4);L(3,steppedFrame(1.12),'draw',.32);
-  L(3,axis(1.3),'drop',.48);L(3,chevrons(.72),'bloom',.35);L(3,burst(.08,.34,12),'draw',.42);
-  L(3,plusses(.92,8,.018),'spin',.28);L(3,poly(.2,4),'bloom',.5);
+  L(3,obelisks(1.05),'draw',.58,'gold',0);L(3,wings(1.08),'draw',.42,'pearl',1);L(3,steppedFrame(1.12),'draw',.36,'bronze',1);
+  L(3,axis(1.3),'drop',.56,'gold',1);L(3,chevrons(.72),'bloom',.4,'cyan',2);L(3,burst(.08,.34,12),'draw',.46,'gold',2);
+  L(3,plusses(.92,8,.018),'spin',.28,'cyan',3);L(3,poly(.2,4),'bloom',.6,'pearl',3);
+  L(3,crowns(1.08),'draw',.34,'gold',2);L(3,jewelAxis(1),'draw',.5,'cyan',3);L(3,brackets(1.12),'draw',.28,'bronze',3);
+  L(3,obelisks(1.05),'trace',1,'cyan',4);L(3,crowns(1.08),'trace',.82,'pearl',4);
 }
 const easeOutQ=k=>1-Math.pow(1-k,4);
 function applySigilStyle(d){
   let h=7;for(const ch of String(d.id||d.name||'signal'))h=(h*31+ch.charCodeAt(0))|0;
+  const seed=Math.abs(h),orientation=((seed>>>3)%2)*Math.PI/2;
   const rng=()=>{h=(h*16807)%2147483647;return Math.abs(h)/2147483647;};
-  sigilVar=Math.abs(h)%4;
-  const col=new THREE.Color(0xe6cf8b).lerp(new THREE.Color(d.color),.38);
-  let i=0;
+  sigilVar=seed%4;
+  const starCol=new THREE.Color(d.color);
+  const roleColor={
+    gold:new THREE.Color(0xe6cf8b).lerp(starCol,.14),
+    cyan:new THREE.Color(C.cyan).lerp(starCol,.08),
+    pearl:new THREE.Color(0xf3ead7).lerp(starCol,.05),
+    bronze:new THREE.Color(0x9f7747).lerp(starCol,.1)
+  };
   SIGL.forEach(Ly=>{
-    Ly.obj.material.color.copy(col);
+    Ly.obj.material.color.copy(roleColor[Ly.role]||roleColor.gold);
     if(Ly.variant!==sigilVar){Ly.obj.visible=false;return;}
-    Ly.spin=(rng()>.5?1:-1)*(.0005+rng()*.0014);
-    Ly.delay=(i++)*.11+rng()*.08;
-    Ly.dur=.7+rng()*.6;
-    Ly.obj.rotation.z=Math.round(rng()*7)*Math.PI/4;
+    Ly.spin=Ly.mode==='spin'?(rng()>.5?1:-1):0;
+    Ly.delay=Ly.tier*.11+rng()*.045;
+    Ly.dur=(Ly.mode==='trace'?.78:.76)+rng()*(Ly.mode==='trace'?.2:.42);
+    Ly.settledRotation=orientation;
+    Ly.startRotation=orientation+Ly.spin*Math.PI/4;
+    Ly.obj.rotation.z=Ly.startRotation;
+    Ly.obj.scale.setScalar(1);
     Ly.obj.geometry.setDrawRange(0,0);
   });
 }
-function updateSigil(t){
-  sigilOp+=(sigilTarget-sigilOp)*.06;
+function updateSigil(t,dt){
+  sigilOp+=(sigilTarget-sigilOp)*(1-Math.exp(-8*dt));
   if(sigilOp<.02&&!sigilTarget){sigil.visible=false;return;}
   sigil.visible=true;
   if(focused&&focused.grp){
     sigil.position.copy(focused.grp.position);
-    const s=(focused.size||6)*2.6;sigil.scale.set(s,s,s);
+    const s=(focused.size||6)*3.05;sigil.scale.set(s,s,s);
   }
   sigil.quaternion.copy(camera.quaternion);
   for(const Ly of SIGL){
     if(Ly.variant!==sigilVar){Ly.obj.visible=false;continue;}
     const age=t-sigilBorn-Ly.delay,k=Math.max(0,Math.min(1,age/Ly.dur));
-    Ly.obj.visible=k>0;
+    Ly.obj.visible=k>0&&!(Ly.mode==='trace'&&k>=1);
     if(!Ly.obj.visible)continue;
-    Ly.obj.rotation.z+=Ly.spin*(1+(1-k)*6);
+    if(Ly.spin)Ly.obj.rotation.z=Ly.startRotation+(Ly.settledRotation-Ly.startRotation)*easeOutQ(k);
     let op=Ly.base*k;
-    if(Ly.mode==='draw'){                 // line traces its own path
+    if(Ly.mode==='trace'){
+      let head=Math.max(2,Math.floor(easeOutQ(k)*Ly.total)),span=Math.max(2,Math.floor(Ly.total*.2));
+      let start=Math.max(0,head-span),count=Math.max(1,head-start);
+      if(Ly.obj.isLineSegments){start-=start%2;count-=count%2;if(count<2)count=2;}
+      Ly.obj.geometry.setDrawRange(start,Math.min(count,Ly.total-start));
+      Ly.obj.scale.setScalar(1.012);op=Ly.base*Math.sin(Math.PI*k);
+    }else if(Ly.mode==='draw'){           // line traces its own path
       let n=Math.floor(easeOutQ(k)*Ly.total);
       if(Ly.obj.isLineSegments)n-=n%2;
       Ly.obj.geometry.setDrawRange(0,n);
@@ -1318,7 +1365,8 @@ function updateSigil(t){
       else if(Ly.mode==='drop'){Ly.obj.scale.setScalar(1.7-.7*easeOutQ(k));op=Ly.base*easeOutQ(k);}
       else Ly.obj.scale.setScalar(1);     // spin: settles via rotation decel
     }
-    Ly.obj.material.opacity=op*sigilOp*(0.78+0.28*Math.sin(t*2.4+Ly.delay*17)); // living glow
+    const shimmer=k<1?(Ly.role==='cyan'?.87+.13*Math.sin(t*2.1+Ly.delay*17):.92+.08*Math.sin(t*1.6+Ly.delay*13)):1;
+    Ly.obj.material.opacity=op*sigilOp*shimmer;
   }
 }
 
@@ -1726,34 +1774,54 @@ renderer.autoClear=false;
 const FXS=[];let armFX=false,shakeK=0;
 function arrivalFX(d){
   const p=d.grp?d.grp.position.clone():d.pos.clone();
-  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX,color:d.color,
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX,color:C.cyan,
     transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false}));
   glow.position.copy(p);scene.add(glow);
   const flash=new THREE.Sprite(new THREE.SpriteMaterial({map:SOFT,color:0xf3ead7,
     transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false}));
   flash.position.copy(p);scene.add(flash);
-  /* crisp wavefront ring */
-  const rp=[];for(let i=0;i<=8;i++){const a=i/8*Math.PI*2+Math.PI/8;
-    rp.push(new THREE.Vector3(Math.cos(a),Math.sin(a),0));}
-  const ringLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(rp),
-    new THREE.LineBasicMaterial({color:d.color,transparent:true,opacity:.9,
-      blending:THREE.AdditiveBlending,depthWrite:false}));
-  ringLine.position.copy(p);scene.add(ringLine);
-  FXS.push({glow,flash,ringLine,life:0,max:1.35,base:d.size});
-  shakeK=.28;
+  /* camera-facing arrival seal: stepped gate, cyan jewel, rails and cardinal finials */
+  const seal=new THREE.Group(),q=[[-.62,1],[.62,1],[.62,.86],[.86,.86],[.86,.62],[1,.62],[1,-.62],[.86,-.62],[.86,-.86],[.62,-.86],[.62,-1],[-.62,-1],[-.62,-.86],[-.86,-.86],[-.86,-.62],[-1,-.62],[-1,.62],[-.86,.62],[-.86,.86],[-.62,.86],[-.62,1]];
+  const line=(pts,segs,color,base,delay,mode='expand')=>{
+    const geo=new THREE.BufferGeometry().setFromPoints(pts),mat=new THREE.LineBasicMaterial({color,transparent:true,opacity:0,
+      blending:color===C.cyan?THREE.AdditiveBlending:THREE.NormalBlending,depthWrite:false,depthTest:false,toneMapped:false});
+    const obj=segs?new THREE.LineSegments(geo,mat):new THREE.Line(geo,mat);
+    obj.userData={total:pts.length,base,delay,mode};obj.renderOrder=8;geo.setDrawRange(0,0);seal.add(obj);return obj;
+  };
+  const V=(x,y)=>new THREE.Vector3(x,y,0);
+  line(q.map(([x,y])=>V(x,y)),false,0xe6cf8b,.9,0);
+  line([[0,.58],[.58,0],[0,-.58],[-.58,0],[0,.58]].map(([x,y])=>V(x,y)),false,C.cyan,.95,.07,'contract');
+  const rails=[],seg=(x1,y1,x2,y2)=>rails.push(V(x1,y1),V(x2,y2));
+  for(const sx of[-1,1])for(const sy of[-1,1]){
+    seg(sx*.12,sy*.12,sx*.34,sy*.34);seg(sx*.34,sy*.34,sx*.7,sy*.34);seg(sx*.7,sy*.34,sx*.88,sy*.5);
+  }
+  line(rails,true,0xf3ead7,.72,.13);
+  const finials=[];for(const [cx,cy] of[[0,.82],[.82,0],[0,-.82],[-.82,0]]){
+    const s=.055;finials.push(V(cx,cy+s),V(cx+s,cy),V(cx+s,cy),V(cx,cy-s),V(cx,cy-s),V(cx-s,cy),V(cx-s,cy),V(cx,cy+s));
+  }
+  line(finials,true,C.cyan,.92,.2,'jewels');
+  seal.position.copy(p);scene.add(seal);
+  FXS.push({glow,flash,seal,life:0,max:1.28,base:d.size});
+  shakeK=.12;
   sfx.burst();
 }
 function updateFX(dt){
   for(let i=FXS.length-1;i>=0;i--){
     const f=FXS[i];f.life+=dt;const k=f.life/f.max;
-    if(k>=1){scene.remove(f.glow,f.flash,f.ringLine);[f.glow,f.flash,f.ringLine].forEach(o=>disposeThree(o));FXS.splice(i,1);continue;}
+    if(k>=1){scene.remove(f.glow,f.flash,f.seal);[f.glow,f.flash,f.seal].forEach(o=>disposeThree(o));FXS.splice(i,1);continue;}
     const e=1-Math.pow(1-k,3);
-    const s=f.base*(1+e*13);f.glow.scale.set(s,s,1);f.glow.material.opacity=.85*(1-k);
+    const s=f.base*(1+e*11);f.glow.scale.set(s,s,1);f.glow.material.opacity=.72*(1-k);
     const fk=Math.min(1,f.life/.22);
     f.flash.scale.setScalar(f.base*(2+fk*5));f.flash.material.opacity=Math.max(0,1-fk)*.95;
-    f.ringLine.scale.setScalar(Math.max(.01,f.base*e*11));
-    f.ringLine.material.opacity=.9*(1-k);
-    f.ringLine.quaternion.copy(camera.quaternion);
+    f.seal.scale.setScalar(Math.max(.01,f.base*(1.1+e*8.2)));
+    f.seal.quaternion.copy(camera.quaternion);f.seal.rotateZ((1-e)*.08);
+    f.seal.children.forEach(obj=>{
+      const u=obj.userData,local=Math.max(0,Math.min(1,(f.life-u.delay)/.42)),draw=1-Math.pow(1-local,4);
+      let n=Math.floor(draw*u.total);if(obj.isLineSegments)n-=n%2;
+      obj.geometry.setDrawRange(0,n);obj.material.opacity=u.base*Math.min(1,local*4)*(1-k);
+      if(u.mode==='contract')obj.scale.setScalar(1.24-.24*e);
+      else if(u.mode==='jewels')obj.scale.setScalar(.72+.28*e);
+    });
   }
 }
 
@@ -2052,12 +2120,12 @@ function flyTo(d){
   const off=p.clone().sub(camera.position).normalize().multiplyScalar(-(d.size*4+16));
   const duration=CFG.flySec*1000;
   setPanelOpen(false);fillPanel(d);armFX=!reduced;
-  if(!reduced){applySigilStyle(d);sigilTarget=1;sigilBorn=clock.getElapsedTime()+1;}
+  if(!reduced){applySigilStyle(d);sigilTarget=1;sigilBorn=clock.getElapsedTime()+.04;}
   else sigilTarget=0;
   back.classList.add('show');hint.style.opacity=0;
   clearTimeout(panel._t);
   tweenTo(p.clone().add(off).add(new THREE.Vector3(d.size*1.2,d.size*.5,0)),p,duration,()=>{
-    if(focused!==d)return;setPanelOpen(true);sfx.open();srLive.textContent=`Arrived at ${d.name}. ${d.desc}`;
+    if(focused!==d)return;setPanelOpen(true);sigilTarget=.46;sfx.open();srLive.textContent=`Arrived at ${d.name}. ${d.desc}`;
   });
 }
 function goHome(){
@@ -2123,7 +2191,7 @@ const NAMES=[];let nextName=4;
 DATA.forEach(d=>{d.ox=0;d.oy=0;});
 function loop(){
   const t=clock.getElapsedTime(),dt=Math.min(t-prevT,.05);prevT=t;
-  if(!reduced){updateTempConst(t);updateComets(dt);updateSigil(t);updateReticle();updateFX(dt);}
+  if(!reduced){updateTempConst(t);updateComets(dt);updateSigil(t,dt);updateReticle();updateFX(dt);}
   /* idle: universe slowly showcases itself */
   if(!reduced&&!focused&&!anim&&performance.now()-lastInput>20000)tSph.th+=.027*dt;
   const pointerEase=1-Math.exp(-2.45*dt);smx+=(mouse.x-smx)*pointerEase;smy+=(mouse.y-smy)*pointerEase;
