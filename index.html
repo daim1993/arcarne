@@ -684,21 +684,6 @@ function glowTex(){
   g.fillStyle=grd;g.fillRect(0,0,128,128);return new THREE.CanvasTexture(c);
 }
 const TEX=glowTex();
-function cometTailTex(){
-  const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');
-  const body=g.createLinearGradient(0,32,256,32);
-  body.addColorStop(0,'rgba(115,224,232,0)');body.addColorStop(.45,'rgba(115,224,232,.08)');
-  body.addColorStop(.78,'rgba(230,207,139,.42)');body.addColorStop(1,'rgba(255,255,255,.92)');
-  g.fillStyle=body;g.fillRect(0,18,256,28);
-  const halo=g.createRadialGradient(224,32,0,224,32,38);
-  halo.addColorStop(0,'rgba(255,255,255,.95)');halo.addColorStop(.28,'rgba(230,207,139,.34)');halo.addColorStop(1,'transparent');
-  g.globalCompositeOperation='lighter';g.fillStyle=halo;g.fillRect(180,0,76,64);
-  const edge=g.createLinearGradient(0,0,0,64);
-  edge.addColorStop(0,'rgba(255,255,255,0)');edge.addColorStop(.5,'rgba(255,255,255,1)');edge.addColorStop(1,'rgba(255,255,255,0)');
-  g.globalCompositeOperation='destination-in';g.fillStyle=edge;g.fillRect(0,0,256,64);
-  return new THREE.CanvasTexture(c);
-}
-const COMET_TAIL=cometTailTex();
 function flareTex(){
   const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
   const grd=g.createRadialGradient(128,128,0,128,128,128);
@@ -1515,7 +1500,6 @@ const flows=[];
 /* Path-driven streams keep a visible, continuous crawl. Their shader swirl is
    disabled below, so these rates are the only motion they contribute. */
 const FLOW_RATE=lowPower?.5:.9;
-const STREAM_TAIL_AXIS=new THREE.Vector3(0,0,1),STREAM_TAIL_OFFSET=.11,STREAM_TAIL_SEGMENTS=lowPower?2:4;
 function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   // open S-curve through space, so the stream reads as a passing comet ribbon
   const pts=[];
@@ -1541,19 +1525,19 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
     transparent:true,opacity:.42,blending:THREE.AdditiveBlending,depthWrite:false});
   glowify(bodyMat,0);
   const body=new THREE.Points(geo,bodyMat);
-  /* Every stream particle gets a short feedback stack. These soft points sample
-     the same path behind the particle, so the wake bends with the flow instead
-     of becoming a straight spline or line. */
-  const particleTrails=[],PARTICLE_TRAIL_STEPS=lowPower?3:6;
+  /* TouchDesigner-style feedback: every particle owns a fading history of its
+     previous rendered positions. The history is eased toward the live particle
+     so the wake follows bends organically instead of drawing a fixed trail. */
+  const particleTrails=[],PARTICLE_TRAIL_STEPS=lowPower?4:8;
   for(let step=0;step<PARTICLE_TRAIL_STEPS;step++){
     const trailPos=new Float32Array(count*3),trailGeo=new THREE.BufferGeometry();
     trailGeo.setAttribute('position',new THREE.BufferAttribute(trailPos,3));
     trailGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
-    const baseOpacity=.055*Math.pow(.68,step),trailColor=step%3===0?0xe6cf8b:0x73e0e8;
-    const trailMat=new THREE.PointsMaterial({size:2.8+step*.14,map:TEX,color:trailColor,
+    const baseOpacity=.075*Math.pow(.74,step),trailColor=step%3===0?0xe6cf8b:0x73e0e8;
+    const trailMat=new THREE.PointsMaterial({size:2.4+step*.1,map:TEX,color:trailColor,
       transparent:true,opacity:baseOpacity,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false});
     const trail=new THREE.Points(trailGeo,trailMat);trail.renderOrder=2;
-    particleTrails.push({pos:trailPos,geo:trailGeo,points:trail,offset:.009+step*.012,baseOpacity});
+    particleTrails.push({pos:trailPos,geo:trailGeo,points:trail,follow:.22*Math.pow(.72,step),baseOpacity});
   }
 
   /* Sparse, brighter tracer particles make selected stream sections read as
@@ -1585,24 +1569,12 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
     const after=new THREE.Points(afterGeo,afterMat);after.renderOrder=3;
     streamAfterimages.push({pos:afterPos,geo:afterGeo,points:after,offset:.018+step*.018,baseOpacity});
   }
-  /* A chain of tapered billboards gives every moving body particle a readable
-     comet tail. Each segment samples the next point along the baked path, so
-     the tail bends with the stream instead of cutting a straight chord. */
-  const tailMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({
-    map:COMET_TAIL,transparent:true,opacity:.06,blending:THREE.AdditiveBlending,
-    depthWrite:false,depthTest:false,side:THREE.DoubleSide,toneMapped:false}),count*STREAM_TAIL_SEGMENTS);
-  tailMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);tailMesh.frustumCulled=false;tailMesh.renderOrder=4;
-  const tailDummy=new THREE.Object3D();
   const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body);
-  group.add(tailMesh);particleTrails.forEach(a=>group.add(a.points));group.add(glints);
+  particleTrails.forEach(a=>group.add(a.points));group.add(glints);
   streamAfterimages.forEach(a=>group.add(a.points));scene.add(group);
   flows.push({TAB,pos,us,jit,geo,speed,count,glintPos,glintUs,glintJit,glintGeo,glintMat,
-    glintCount,particleTrails,streamAfterimages,tailMesh,tailDummy,group,
-    tailSegments:STREAM_TAIL_SEGMENTS,tailSegmentStep:STREAM_TAIL_OFFSET/STREAM_TAIL_SEGMENTS,
-    tailHead:new THREE.Vector3(),tailBack:new THREE.Vector3(),tailCenter:new THREE.Vector3(),
-    tailDir:new THREE.Vector3(),tailRight:new THREE.Vector3(),tailUp:new THREE.Vector3(),
-    tailInvGroup:new THREE.Quaternion(),tailWorldQ:new THREE.Quaternion(),tailLocalQ:new THREE.Quaternion(),
-    tailRoll:new THREE.Quaternion(),volume,phase:Math.random()*Math.PI*2});
+    glintCount,particleTrails,streamAfterimages,group,historyPrimed:false,
+    volume,phase:Math.random()*Math.PI*2});
 }
 /* One authored stream, dense enough to read as a volumetric ribbon rather than
    eight competing loops. Gold carries the body, cyan marks the moving core. */
@@ -1610,9 +1582,6 @@ makeFlow(0xe6cf8b,290,.34,.24,.010,5200,60);
 function updateFlows(dt){
   for(const f of flows){
     const T=f.TAB,L=T.length-1;
-    f.tailRight.set(1,0,0).applyQuaternion(camera.quaternion);
-    f.tailUp.set(0,1,0).applyQuaternion(camera.quaternion);
-    f.tailInvGroup.copy(f.group.quaternion).invert();
     for(let i=0;i<f.count;i++){
       let u=(f.us[i]+f.speed*dt*FLOW_RATE)%1;if(u>=.999999)u=0;f.us[i]=u;
       const x=u*L,i0=Math.min(L-1,x|0),fr=x-i0,A=T[i0],B=T[i0+1];
@@ -1620,31 +1589,18 @@ function updateFlows(dt){
       f.pos[i*3+1]=A.y+(B.y-A.y)*fr+f.jit[i*3+1];
       f.pos[i*3+2]=A.z+(B.z-A.z)*fr+f.jit[i*3+2];
       for(const trail of f.particleTrails){
-        const tu=(u-trail.offset+1)%1,tx=tu*L,ti=Math.min(L-1,tx|0),tf=tx-ti,TA=T[ti],TB=T[ti+1];
-        trail.pos[i*3]=TA.x+(TB.x-TA.x)*tf+f.jit[i*3]*.94;
-        trail.pos[i*3+1]=TA.y+(TB.y-TA.y)*tf+f.jit[i*3+1]*.94;
-        trail.pos[i*3+2]=TA.z+(TB.z-TA.z)*tf+f.jit[i*3+2]*.94;
-      }
-      for(let seg=0;seg<f.tailSegments;seg++){
-        const headU=Math.max(0,u-seg*f.tailSegmentStep),headX=headU*L,headI=Math.min(L-1,headX|0),headF=headX-headI,headA=T[headI],headB=T[headI+1];
-        const backU=Math.max(0,u-(seg+1)*f.tailSegmentStep),backX=backU*L,backI=Math.min(L-1,backX|0),backF=backX-backI,backA=T[backI],backB=T[backI+1];
-        f.tailHead.set(headA.x+(headB.x-headA.x)*headF+f.jit[i*3],
-          headA.y+(headB.y-headA.y)*headF+f.jit[i*3+1],headA.z+(headB.z-headA.z)*headF+f.jit[i*3+2]);
-        f.tailBack.set(backA.x+(backB.x-backA.x)*backF+f.jit[i*3],
-          backA.y+(backB.y-backA.y)*backF+f.jit[i*3+1],backA.z+(backB.z-backA.z)*backF+f.jit[i*3+2]);
-        f.tailCenter.copy(f.tailHead).add(f.tailBack).multiplyScalar(.5);
-        f.tailDir.copy(f.tailHead).sub(f.tailBack).applyQuaternion(f.group.quaternion);
-        const tailLen=Math.max(1.8,f.tailDir.length()*.95),tailAngle=Math.atan2(f.tailDir.dot(f.tailUp),f.tailDir.dot(f.tailRight));
-        const taper=Math.pow(1-seg/f.tailSegments,.78);
-        f.tailDummy.position.copy(f.tailCenter);f.tailRoll.setFromAxisAngle(STREAM_TAIL_AXIS,tailAngle);
-        f.tailWorldQ.copy(camera.quaternion).multiply(f.tailRoll);
-        f.tailLocalQ.copy(f.tailInvGroup).multiply(f.tailWorldQ);
-        f.tailDummy.quaternion.copy(f.tailLocalQ);f.tailDummy.scale.set(tailLen,(.12+f.volume*.0015)*taper,1);
-        f.tailDummy.updateMatrix();f.tailMesh.setMatrixAt(i*f.tailSegments+seg,f.tailDummy.matrix);
+        const p=i*3,follow=trail.follow;
+        if(!f.historyPrimed){
+          trail.pos[p]=f.pos[p];trail.pos[p+1]=f.pos[p+1];trail.pos[p+2]=f.pos[p+2];
+        }else{
+          trail.pos[p]+=(f.pos[p]-trail.pos[p])*follow;
+          trail.pos[p+1]+=(f.pos[p+1]-trail.pos[p+1])*follow;
+          trail.pos[p+2]+=(f.pos[p+2]-trail.pos[p+2])*follow;
+        }
       }
     }
     f.geo.attributes.position.needsUpdate=true;
-    f.tailMesh.instanceMatrix.needsUpdate=true;
+    f.historyPrimed=true;
     f.phase+=dt;
     for(let i=0;i<f.glintCount;i++){
       let u=(f.glintUs[i]+f.speed*dt*FLOW_RATE*1.05)%1;if(u>=.999999)u=0;f.glintUs[i]=u;
