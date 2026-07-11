@@ -1497,6 +1497,10 @@ const spirals=[];
 
 /* ============ flowing particle streams ============ */
 const flows=[];
+/* Streams are deliberately glacial, like illuminated dust caught in an orbit.
+   Updating every frame keeps the slower motion smooth while the rate cap leaves
+   enough room for the main vortex, stars, and dossier reveal to stay responsive. */
+const FLOW_RATE=lowPower?.22:.34;
 function makeFlow(color,radius,tiltZ,tiltX,speed,count){
   // closed wavy loop path through space
   const pts=[];
@@ -1536,22 +1540,34 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count){
     transparent:true,opacity:.72,blending:THREE.AdditiveBlending,depthWrite:false});
   glowify(glintMat);
   const glints=new THREE.Points(glintGeo,glintMat);
-  const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body,glints);scene.add(group);
-  flows.push({TAB,pos,us,jit,geo,speed,count,glintPos,glintUs,glintJit,glintGeo,glintMat,glintCount,phase:Math.random()*Math.PI*2});
+  /* Feedback tails: three paired afterimages per tracer. LineSegments avoids
+     connecting unrelated particles, so each independent stream keeps its own
+     readable wake. */
+  const trailPos=new Float32Array(glintCount*3*2*3);
+  const trailGeo=new THREE.BufferGeometry(),trailAttr=new THREE.BufferAttribute(trailPos,3);
+  trailAttr.setUsage(THREE.DynamicDrawUsage);trailGeo.setAttribute('position',trailAttr);
+  trailGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),radius+200);
+  const trailColor=(color===0x62d5e4||color===0x9beef0||color===0x3aaec4)?0x62d5e4:0xe6cf8b;
+  const trailMat=new THREE.LineBasicMaterial({color:trailColor,transparent:true,opacity:.2,
+    blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false});
+  const trail=new THREE.LineSegments(trailGeo,trailMat);trail.renderOrder=-1;
+  const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body,trail,glints);scene.add(group);
+  flows.push({TAB,pos,us,jit,geo,speed,count,glintPos,glintUs,glintJit,glintGeo,glintMat,
+    glintCount,trailPos,trailGeo,trailMat,trail,phase:Math.random()*Math.PI*2});
 }
 makeFlow(0x62d5e4,300,.4,.2,.010,1800);
-makeFlow(0xb7934f,380,-.3,.5,.007,1800);
+makeFlow(0xe6cf8b,380,-.3,.5,.007,1800);
 makeFlow(0xd4a85f,240,.9,-.3,.013,1500);
-makeFlow(0xc7896e,340,-.7,-.2,.009,1600);
-makeFlow(0x9eaa82,270,.15,.65,.011,1400);
-makeFlow(0xe5dcc3,420,.55,-.5,.006,1800);
-makeFlow(0xc4aa69,200,-.15,.35,.014,1300);
-makeFlow(0xf0dfaf,460,-.45,.15,.005,1800);
+makeFlow(0x3aaec4,340,-.7,-.2,.009,1600);
+makeFlow(0x9beef0,270,.15,.65,.011,1400);
+makeFlow(0xf3ead7,420,.55,-.5,.006,1800);
+makeFlow(0xc9ad67,200,-.15,.35,.014,1300);
+makeFlow(0xe6cf8b,460,-.45,.15,.005,1800);
 function updateFlows(dt){
   for(const f of flows){
     const T=f.TAB,L=T.length-1;
     for(let i=0;i<f.count;i++){
-      let u=(f.us[i]+f.speed*dt)%1;if(u>=.999999)u=0;f.us[i]=u;
+      let u=(f.us[i]+f.speed*dt*FLOW_RATE)%1;if(u>=.999999)u=0;f.us[i]=u;
       const x=u*L,i0=Math.min(L-1,x|0),fr=x-i0,A=T[i0],B=T[i0+1];
       f.pos[i*3]  =A.x+(B.x-A.x)*fr+f.jit[i*3];
       f.pos[i*3+1]=A.y+(B.y-A.y)*fr+f.jit[i*3+1];
@@ -1560,14 +1576,27 @@ function updateFlows(dt){
     f.geo.attributes.position.needsUpdate=true;
     f.phase+=dt;
     for(let i=0;i<f.glintCount;i++){
-      let u=(f.glintUs[i]+f.speed*dt*1.08)%1;if(u>=.999999)u=0;f.glintUs[i]=u;
+      let u=(f.glintUs[i]+f.speed*dt*FLOW_RATE*1.08)%1;if(u>=.999999)u=0;f.glintUs[i]=u;
       const x=u*L,i0=Math.min(L-1,x|0),fr=x-i0,A=T[i0],B=T[i0+1];
       f.glintPos[i*3]=A.x+(B.x-A.x)*fr+f.glintJit[i*3];
       f.glintPos[i*3+1]=A.y+(B.y-A.y)*fr+f.glintJit[i*3+1];
       f.glintPos[i*3+2]=A.z+(B.z-A.z)*fr+f.glintJit[i*3+2];
+      /* Each pair starts at the tracer head and reaches farther back along the
+         same baked curve. The result is a restrained, cyan/gold feedback wake. */
+      for(let tail=0;tail<3;tail++){
+        const back=.006+tail*.008,tu=(u-back+1)%1,tx=tu*L,ti=Math.min(L-1,tx|0),tf=tx-ti,TA=T[ti],TB=T[ti+1];
+        const base=(i*3+tail)*6;
+        f.trailPos[base]=f.glintPos[i*3];f.trailPos[base+1]=f.glintPos[i*3+1];f.trailPos[base+2]=f.glintPos[i*3+2];
+        f.trailPos[base+3]=TA.x+(TB.x-TA.x)*tf+f.glintJit[i*3]*.82;
+        f.trailPos[base+4]=TA.y+(TB.y-TA.y)*tf+f.glintJit[i*3+1]*.82;
+        f.trailPos[base+5]=TA.z+(TB.z-TA.z)*tf+f.glintJit[i*3+2]*.82;
+      }
     }
     f.glintGeo.attributes.position.needsUpdate=true;
-    f.glintMat.opacity=.5+.24*(.5+.5*Math.sin(f.phase*1.8));
+    f.trailGeo.attributes.position.needsUpdate=true;
+    const breath=.5+.5*Math.sin(f.phase*1.8);
+    f.glintMat.opacity=.5+.24*breath;
+    f.trailMat.opacity=.1+.13*breath;
   }
 }
 
@@ -2261,7 +2290,7 @@ function loop(){
   updateLines();
   /* every registered line breathes */
   if(!reduced)for(const g of GLOWL)g.m.opacity=g.b*(.9+.1*Math.sin(t*g.sp+g.ph));
-  if(!reduced&&fc%2===0)updateFlows(dt*2);
+  if(!reduced)updateFlows(dt);
   if(!reduced&&!focused){dustA.rotation.y=t*.005;dustB.rotation.y=-t*.007;dustC.rotation.y=t*.004;galaxy.rotation.y=t*.0022;
     spirals.forEach((s,i)=>s.material.rotation+=.024*dt*(i%2?1:-1));
     NEBS.forEach(s=>{s.material.rotation+=s.userData.rs;
