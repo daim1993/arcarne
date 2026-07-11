@@ -1501,7 +1501,7 @@ const flows=[];
    disabled below, so these rates are the only motion they contribute. */
 const FLOW_RATE=lowPower?.5:.9;
 const STREAM_RATE=lowPower?1.2:2.2;
-function makeFlow(color,radius,tiltZ,tiltX,speed,count){
+function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   // closed wavy loop path through space
   const pts=[];
   for(let i=0;i<10;i++){
@@ -1515,7 +1515,7 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count){
   const TAB=curve.getPoints(512);              // baked path — cheap lerp per frame
   const pos=new Float32Array(count*3),us=new Float32Array(count),jit=new Float32Array(count*3);
   for(let i=0;i<count;i++){us[i]=Math.random();
-    jit[i*3]=(Math.random()-.5)*14;jit[i*3+1]=(Math.random()-.5)*14;jit[i*3+2]=(Math.random()-.5)*14;}
+    jit[i*3]=(Math.random()-.5)*volume;jit[i*3+1]=(Math.random()-.5)*volume;jit[i*3+2]=(Math.random()-.5)*volume;}
   const geo=new THREE.BufferGeometry();
   const attr=new THREE.BufferAttribute(pos,3);
   attr.setUsage(THREE.DynamicDrawUsage);          // streamed every frame — tell GPU
@@ -1532,7 +1532,7 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count){
   const glintCount=Math.max(36,Math.round(count*.075));
   const glintPos=new Float32Array(glintCount*3),glintUs=new Float32Array(glintCount),glintJit=new Float32Array(glintCount*3);
   for(let i=0;i<glintCount;i++){glintUs[i]=(Math.random()+i/glintCount*.22)%1;
-    glintJit[i*3]=(Math.random()-.5)*8;glintJit[i*3+1]=(Math.random()-.5)*8;glintJit[i*3+2]=(Math.random()-.5)*8;}
+    glintJit[i*3]=(Math.random()-.5)*volume*.58;glintJit[i*3+1]=(Math.random()-.5)*volume*.58;glintJit[i*3+2]=(Math.random()-.5)*volume*.58;}
   const glintGeo=new THREE.BufferGeometry(),glintAttr=new THREE.BufferAttribute(glintPos,3);
   glintAttr.setUsage(THREE.DynamicDrawUsage);glintGeo.setAttribute('position',glintAttr);
   glintGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),radius+200);
@@ -1563,21 +1563,16 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count){
   const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body,stream,trail,glints);scene.add(group);
   flows.push({TAB,pos,us,jit,geo,speed,count,glintPos,glintUs,glintJit,glintGeo,glintMat,
     glintCount,streamCount,streamPos,streamGeo,streamMat,stream,streamU:Math.random(),trailPos,trailGeo,trailMat,trail,
-    phase:Math.random()*Math.PI*2});
+    volume,phase:Math.random()*Math.PI*2});
 }
-makeFlow(0x62d5e4,300,.4,.2,.010,1800);
-makeFlow(0xe6cf8b,380,-.3,.5,.007,1800);
-makeFlow(0xd4a85f,240,.9,-.3,.013,1500);
-makeFlow(0x3aaec4,340,-.7,-.2,.009,1600);
-makeFlow(0x9beef0,270,.15,.65,.011,1400);
-makeFlow(0xf3ead7,420,.55,-.5,.006,1800);
-makeFlow(0xc9ad67,200,-.15,.35,.014,1300);
-makeFlow(0xe6cf8b,460,-.45,.15,.005,1800);
+/* One authored stream, dense enough to read as a volumetric ribbon rather than
+   eight competing loops. Gold carries the body, cyan marks the moving core. */
+makeFlow(0xe6cf8b,360,.34,.24,.010,5200,72);
 function updateFlows(dt){
   for(const f of flows){
     const T=f.TAB,L=T.length-1;
     f.streamU=(f.streamU+f.speed*dt*STREAM_RATE)%1;
-    const streamSpan=.11;
+    const streamSpan=.14;
     for(let si=0;si<f.streamCount;si++){
       const su=(f.streamU+si/(f.streamCount-1)*streamSpan)%1,sx=su*L,s0=Math.min(L-1,sx|0),sf=sx-s0,A=T[s0],B=T[s0+1];
       f.streamPos[si*3]=A.x+(B.x-A.x)*sf;
