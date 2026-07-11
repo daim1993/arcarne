@@ -1583,9 +1583,8 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
     vortexTime:Math.random()*Math.PI*2,vortexRate:24,vortexOut:new THREE.Vector3(),glintVortexOut:new THREE.Vector3(),
     volume,phase:Math.random()*Math.PI*2});
 }
-/* One authored stream, dense enough to read as a volumetric ribbon rather than
-   eight competing loops. Gold carries the body, cyan marks the moving core. */
-makeFlow(0xe6cf8b,290,.34,.24,.010,2800,60);
+/* The authored stream is intentionally disabled; the universe remains open
+   with its constellation field and ambient particles. */
 function updateFlows(dt){
   for(const f of flows){
     const T=f.TAB,L=T.length-1;
