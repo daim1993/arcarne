@@ -1502,17 +1502,18 @@ const flows=[];
 const FLOW_RATE=lowPower?.5:.9;
 const STREAM_RATE=lowPower?1.2:2.2;
 function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
-  // closed wavy loop path through space
+  // open S-curve through space, so the stream reads as a passing comet ribbon
   const pts=[];
-  for(let i=0;i<10;i++){
-    const a=i/10*Math.PI*2;
+  for(let i=0;i<14;i++){
+    const k=i/13;
     pts.push(new THREE.Vector3(
-      Math.cos(a)*radius+(Math.random()-.5)*70,
-      (Math.random()-.5)*110+Math.sin(a*2)*45,
-      Math.sin(a)*radius+(Math.random()-.5)*70));
+      (k-.5)*radius*2.05,
+      Math.sin(k*Math.PI*1.45)*radius*.48+(k-.5)*70+(Math.random()-.5)*28,
+      Math.sin(k*Math.PI)*radius*.72+Math.sin(k*Math.PI*2.1)*55+(Math.random()-.5)*28));
   }
-  const curve=new THREE.CatmullRomCurve3(pts,true,'catmullrom',.8);
+  const curve=new THREE.CatmullRomCurve3(pts,false,'catmullrom',.85);
   const TAB=curve.getPoints(512);              // baked path — cheap lerp per frame
+  const flowBounds=radius+volume+180;
   const pos=new Float32Array(count*3),us=new Float32Array(count),jit=new Float32Array(count*3);
   for(let i=0;i<count;i++){us[i]=Math.random();
     jit[i*3]=(Math.random()-.5)*volume;jit[i*3+1]=(Math.random()-.5)*volume;jit[i*3+2]=(Math.random()-.5)*volume;}
@@ -1520,9 +1521,9 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
   const attr=new THREE.BufferAttribute(pos,3);
   attr.setUsage(THREE.DynamicDrawUsage);          // streamed every frame — tell GPU
   geo.setAttribute('position',attr);
-  geo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),radius+200);
+  geo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
   const bodyMat=new THREE.PointsMaterial({size:2,map:TEX,color,
-    transparent:true,opacity:.34,blending:THREE.AdditiveBlending,depthWrite:false});
+    transparent:true,opacity:.42,blending:THREE.AdditiveBlending,depthWrite:false});
   glowify(bodyMat,0);
   const body=new THREE.Points(geo,bodyMat);
 
@@ -1535,29 +1536,29 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
     glintJit[i*3]=(Math.random()-.5)*volume*.58;glintJit[i*3+1]=(Math.random()-.5)*volume*.58;glintJit[i*3+2]=(Math.random()-.5)*volume*.58;}
   const glintGeo=new THREE.BufferGeometry(),glintAttr=new THREE.BufferAttribute(glintPos,3);
   glintAttr.setUsage(THREE.DynamicDrawUsage);glintGeo.setAttribute('position',glintAttr);
-  glintGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),radius+200);
+  glintGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
   const glintMat=new THREE.PointsMaterial({size:3.8,map:TEX,color:0x73e0e8,
-    transparent:true,opacity:.72,blending:THREE.AdditiveBlending,depthWrite:false});
+    transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false});
   glowify(glintMat,0);
   const glints=new THREE.Points(glintGeo,glintMat);
   /* A moving, high-contrast ribbon makes the stream itself travel with the
-     particles. It is only a short arc of the loop, never a static full ring. */
+     particles. It is only a short arc of the open path. */
   const streamCount=56,streamPos=new Float32Array(streamCount*3);
   const streamGeo=new THREE.BufferGeometry(),streamAttr=new THREE.BufferAttribute(streamPos,3);
   streamAttr.setUsage(THREE.DynamicDrawUsage);streamGeo.setAttribute('position',streamAttr);
-  streamGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),radius+200);
+  streamGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
   /* Feedback tails: three paired afterimages per tracer. LineSegments avoids
      connecting unrelated particles, so each independent stream keeps its own
      readable wake. */
   const trailPos=new Float32Array(glintCount*3*2*3);
   const trailGeo=new THREE.BufferGeometry(),trailAttr=new THREE.BufferAttribute(trailPos,3);
   trailAttr.setUsage(THREE.DynamicDrawUsage);trailGeo.setAttribute('position',trailAttr);
-  trailGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),radius+200);
+  trailGeo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),flowBounds);
   const trailColor=(color===0x62d5e4||color===0x9beef0||color===0x3aaec4)?0x62d5e4:0xe6cf8b;
-  const streamMat=new THREE.LineBasicMaterial({color:trailColor,transparent:true,opacity:.28,
+  const streamMat=new THREE.LineBasicMaterial({color:trailColor,transparent:true,opacity:.38,
     blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false});
   const stream=new THREE.Line(streamGeo,streamMat);stream.renderOrder=-1;
-  const trailMat=new THREE.LineBasicMaterial({color:trailColor,transparent:true,opacity:.2,
+  const trailMat=new THREE.LineBasicMaterial({color:trailColor,transparent:true,opacity:.28,
     blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false});
   const trail=new THREE.LineSegments(trailGeo,trailMat);trail.renderOrder=-1;
   const group=new THREE.Group();group.rotation.set(tiltX,0,tiltZ);group.add(body,stream,trail,glints);scene.add(group);
@@ -1567,12 +1568,13 @@ function makeFlow(color,radius,tiltZ,tiltX,speed,count,volume=14){
 }
 /* One authored stream, dense enough to read as a volumetric ribbon rather than
    eight competing loops. Gold carries the body, cyan marks the moving core. */
-makeFlow(0xe6cf8b,360,.34,.24,.010,5200,72);
+makeFlow(0xe6cf8b,290,.34,.24,.010,5200,60);
 function updateFlows(dt){
+  const streamSpan=.14;
   for(const f of flows){
     const T=f.TAB,L=T.length-1;
-    f.streamU=(f.streamU+f.speed*dt*STREAM_RATE)%1;
-    const streamSpan=.14;
+    f.streamU+=f.speed*dt*STREAM_RATE;
+    if(f.streamU>1-streamSpan)f.streamU=0;
     for(let si=0;si<f.streamCount;si++){
       const su=(f.streamU+si/(f.streamCount-1)*streamSpan)%1,sx=su*L,s0=Math.min(L-1,sx|0),sf=sx-s0,A=T[s0],B=T[s0+1];
       f.streamPos[si*3]=A.x+(B.x-A.x)*sf;
@@ -1595,23 +1597,36 @@ function updateFlows(dt){
       f.glintPos[i*3]=A.x+(B.x-A.x)*fr+f.glintJit[i*3];
       f.glintPos[i*3+1]=A.y+(B.y-A.y)*fr+f.glintJit[i*3+1];
       f.glintPos[i*3+2]=A.z+(B.z-A.z)*fr+f.glintJit[i*3+2];
-      /* Each pair starts at the tracer head and reaches farther back along the
-         same baked curve. The result is a restrained, cyan/gold feedback wake. */
+      /* Consecutive segments follow the same baked curve, so the wake bends
+         with the stream instead of cutting straight chords across it. */
       for(let tail=0;tail<3;tail++){
-        const back=.006+tail*.008,tu=(u-back+1)%1,tx=tu*L,ti=Math.min(L-1,tx|0),tf=tx-ti,TA=T[ti],TB=T[ti+1];
+        const back=.006+tail*.008,frontBack=tail?back-.008:0;
         const base=(i*3+tail)*6;
-        f.trailPos[base]=f.glintPos[i*3];f.trailPos[base+1]=f.glintPos[i*3+1];f.trailPos[base+2]=f.glintPos[i*3+2];
-        f.trailPos[base+3]=TA.x+(TB.x-TA.x)*tf+f.glintJit[i*3]*.82;
-        f.trailPos[base+4]=TA.y+(TB.y-TA.y)*tf+f.glintJit[i*3+1]*.82;
-        f.trailPos[base+5]=TA.z+(TB.z-TA.z)*tf+f.glintJit[i*3+2]*.82;
+        if(u<.024){
+          f.trailPos[base]=f.glintPos[i*3];f.trailPos[base+1]=f.glintPos[i*3+1];f.trailPos[base+2]=f.glintPos[i*3+2];
+          f.trailPos[base+3]=f.glintPos[i*3];f.trailPos[base+4]=f.glintPos[i*3+1];f.trailPos[base+5]=f.glintPos[i*3+2];
+          continue;
+        }
+        const fu=(u-frontBack+1)%1,bu=(u-back+1)%1;
+        const fx=fu*L,fi=Math.min(L-1,fx|0),ff=fx-fi,fA=T[fi],fB=T[fi+1];
+        const bx=bu*L,bi=Math.min(L-1,bx|0),bf=bx-bi,bA=T[bi],bB=T[bi+1];
+        if(tail===0){f.trailPos[base]=f.glintPos[i*3];f.trailPos[base+1]=f.glintPos[i*3+1];f.trailPos[base+2]=f.glintPos[i*3+2];}
+        else{
+          f.trailPos[base]=fA.x+(fB.x-fA.x)*ff+f.glintJit[i*3]*.82;
+          f.trailPos[base+1]=fA.y+(fB.y-fA.y)*ff+f.glintJit[i*3+1]*.82;
+          f.trailPos[base+2]=fA.z+(fB.z-fA.z)*ff+f.glintJit[i*3+2]*.82;
+        }
+        f.trailPos[base+3]=bA.x+(bB.x-bA.x)*bf+f.glintJit[i*3]*.82;
+        f.trailPos[base+4]=bA.y+(bB.y-bA.y)*bf+f.glintJit[i*3+1]*.82;
+        f.trailPos[base+5]=bA.z+(bB.z-bA.z)*bf+f.glintJit[i*3+2]*.82;
       }
     }
     f.glintGeo.attributes.position.needsUpdate=true;
     f.trailGeo.attributes.position.needsUpdate=true;
     const breath=.5+.5*Math.sin(f.phase*1.8);
-    f.glintMat.opacity=.5+.24*breath;
-    f.streamMat.opacity=.16+.16*breath;
-    f.trailMat.opacity=.1+.13*breath;
+    f.glintMat.opacity=.68+.22*breath;
+    f.streamMat.opacity=.24+.22*breath;
+    f.trailMat.opacity=.14+.16*breath;
   }
 }
 
