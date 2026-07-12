@@ -576,7 +576,7 @@ const DATA=[
 const MAJOR_COUNT=DATA.length;
 
 /* ================= 12 CONSTELLATIONS ================= */
-const CONST=[
+const CONST_BASE=[
  {name:'MOTUS',theme:'Motion',color:C.cyan,members:['After Effects','Moho','Premiere Pro','Rive','Kinetic Type','Easing Curves','Rhythm']},
  {name:'TRION',theme:'3D / Real-time',color:C.violet,members:['Blender','3ds Max','Unreal Engine','Unity','Marvelous Designer','EmberGen','Spline']},
  {name:'FORMA',theme:'Design',color:C.magenta,members:['Photoshop','Illustrator','Adobe XD','Figma','Framer','Composition','Color Systems']},
@@ -653,32 +653,97 @@ const CONSTELLATION_FORMS=[
   {name:'fish',p:[[-.9,.65],[-.45,.2],[0,-.35],[.45,.2],[.9,.65],[-.45,-.8],[.45,-.8]],e:[[0,1],[1,2],[2,3],[3,4],[1,5],[3,6],[5,6]]},
 ];
 
+const constellationNumber=(value,fallback,min,max)=>{
+  const number=Number(value);return Number.isFinite(number)?Math.min(max,Math.max(min,number)):fallback;
+};
+const constellationColor=(value,fallback)=>{
+  if(typeof value==='number'&&Number.isFinite(value))return Math.max(0,Math.min(0xffffff,value|0));
+  const text=String(value||'').trim();return /^#[0-9a-f]{6}$/i.test(text)?parseInt(text.slice(1),16):fallback;
+};
+const constellationSlug=(value,fallback)=>cleanText(value,72).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||fallback;
+function defaultConstellations(){
+  return CONST_BASE.map((base,ci)=>{
+    const form=CONSTELLATION_FORMS[ci%CONSTELLATION_FORMS.length];
+    const stars=base.members.map((name,mi)=>({
+      id:base.name+'-'+mi,name,tag:base.name+' · '+base.theme,
+      meta:'CONSTELLATION '+(ci+1).toString().padStart(2,'0')+' / '+CONST_BASE.length,
+      desc:name+'. One star of '+base.name+', the '+base.theme.toLowerCase()+' constellation in the Arcarne sky.',
+      chips:[base.theme],size:2.6,
+    }));
+    return {id:base.name.toLowerCase(),name:base.name,theme:base.theme,color:base.color,
+      distance:170+(ci%4)*10,spacing:38+(ci%3)*3,rotation:Math.round((ci*.47-.55)*180/Math.PI),pitch:0,yaw:0,
+      points:form.p.map(point=>[point[0],point[1],0]),edges:form.e.map(edge=>edge.slice()),stars};
+  });
+}
+function normalizeConstellations(raw){
+  const defaults=defaultConstellations();
+  const source=Array.isArray(raw)?raw:defaults;
+  return source.slice(0,24).map((item,ci)=>{
+    if(!item||typeof item!=='object'||Array.isArray(item))return null;
+    const fallback=defaults[ci%defaults.length];
+    const name=cleanText(item.name,72)||fallback.name;
+    const theme=cleanText(item.theme,90)||fallback.theme;
+    const id=constellationSlug(item.id||name,'constellation-'+ci);
+    const rawStars=Array.isArray(item.stars)?item.stars:fallback.stars;
+    const stars=rawStars.slice(0,20).map((star,si)=>{
+      const value=star&&typeof star==='object'&&!Array.isArray(star)?star:{};
+      const starName=cleanText(value.name,100)||('Star '+(si+1));
+      const chips=Array.isArray(value.chips)?value.chips:String(value.chips||theme).split(',');
+      const cta=[];
+      [[value.b1l,value.b1u],[value.b2l,value.b2u],[value.b3l,value.b3u]].forEach(([label,url],buttonIndex)=>{
+        label=cleanText(label,80);url=cleanText(url,2048);if(label&&url)cta.push([label,url,buttonIndex===0?1:0]);
+      });
+      return {id:constellationSlug(value.id,id+'-'+si),name:starName,
+        tag:cleanText(value.tag,80)||(name+' · '+theme),
+        meta:cleanText(value.meta,100)||('CONSTELLATION '+(ci+1).toString().padStart(2,'0')+' / '+Math.max(1,source.length)),
+        desc:cleanText(value.desc,600)||(starName+'. One star of '+name+', the '+theme.toLowerCase()+' constellation.'),
+        chips:chips.map(chip=>cleanText(chip,40)).filter(Boolean).slice(0,12),
+        img:cleanText(value.img,2048),vid:cleanText(value.vid,2048),cta,
+        size:constellationNumber(value.size,2.6,1.2,6)};
+    });
+    while(stars.length<2){const si=stars.length;stars.push({id:id+'-'+si,name:'Star '+(si+1),tag:name+' · '+theme,
+      meta:'CONSTELLATION '+(ci+1).toString().padStart(2,'0'),desc:'A signal in the '+name+' constellation.',chips:[theme],img:'',vid:'',cta:[],size:2.6});}
+    const rawPoints=Array.isArray(item.points)?item.points:fallback.points;
+    const points=stars.map((star,si)=>{
+      const point=Array.isArray(rawPoints[si])?rawPoints[si]:null;
+      const angle=si/Math.max(1,stars.length)*Math.PI*2-Math.PI/2;
+      return [constellationNumber(point?.[0],Math.cos(angle),-1.4,1.4),constellationNumber(point?.[1],Math.sin(angle),-1.4,1.4),constellationNumber(point?.[2],0,-1,1)];
+    });
+    const edges=[];
+    const rawEdges=Array.isArray(item.edges)?item.edges:fallback.edges;
+    rawEdges.forEach(edge=>{if(!Array.isArray(edge))return;const a=Math.round(Number(edge[0])),b=Math.round(Number(edge[1]));
+      if(a>=0&&b>=0&&a<stars.length&&b<stars.length&&a!==b&&!edges.some(pair=>(pair[0]===a&&pair[1]===b)||(pair[0]===b&&pair[1]===a)))edges.push([a,b]);});
+    return {id,name,theme,color:constellationColor(item.color,fallback.color),
+      distance:constellationNumber(item.distance,fallback.distance,110,320),spacing:constellationNumber(item.spacing,fallback.spacing,18,95),
+      rotation:constellationNumber(item.rotation,fallback.rotation,-180,180),pitch:constellationNumber(item.pitch,0,-75,75),yaw:constellationNumber(item.yaw,0,-180,180),
+      points,edges,stars,members:stars.map(star=>star.name)};
+  }).filter(Boolean);
+}
+const CONST=normalizeConstellations(RAW_CFG.constellations);
+
 /* build constellation member data — outer shell, ~85 more stars */
 const CLINES=[]; // pairs of star DATA refs — updated per frame so lines touch spheres
 CONST.forEach((cn,ci)=>{
   const phi=Math.acos(1-2*((ci+.5)/CONST.length)),th=Math.PI*(1+Math.sqrt(5))*ci*1.7+rnd();
-  const R=150+rnd()*60;
+  const R=cn.distance;
   const center=new THREE.Vector3(R*Math.sin(phi)*Math.cos(th),(R*Math.cos(phi))*.7,R*Math.sin(phi)*Math.sin(th));
   cn.center=center;
-  const form=CONSTELLATION_FORMS[ci%CONSTELLATION_FORMS.length];
-  const formScale=38+(ci%3)*3;
-  const formTilt=ci*.47-.55;
-  const axis=new THREE.Vector3(0,0,1);
+  const formScale=cn.spacing;
+  const axisZ=new THREE.Vector3(0,0,1),axisX=new THREE.Vector3(1,0,0),axisY=new THREE.Vector3(0,1,0);
   const made=[];
-  cn.members.forEach((m,mi)=>{
-    const fp=form.p[mi%form.p.length];
-    const local=new THREE.Vector3(fp[0]*formScale,fp[1]*formScale*.9,Math.sin(mi*1.7+ci)*2.5);
-    local.applyAxisAngle(axis,formTilt);
+  cn.stars.forEach((star,mi)=>{
+    const fp=cn.points[mi];
+    const local=new THREE.Vector3(fp[0]*formScale,fp[1]*formScale*.9,fp[2]*formScale*.45);
+    local.applyAxisAngle(axisZ,cn.rotation*Math.PI/180).applyAxisAngle(axisX,cn.pitch*Math.PI/180).applyAxisAngle(axisY,cn.yaw*Math.PI/180);
     const p=center.clone().add(local);
     const d={
-      id:cn.name+'-'+mi,name:m,tag:cn.name+' · '+cn.theme,color:cn.color,size:2.1+rnd()*1.1,
-      meta:'CONSTELLATION '+(ci+1).toString().padStart(2,'0')+' / 12',
-      desc:m+'. One star of '+cn.name+', the '+cn.theme.toLowerCase()+' constellation in the Arcarne sky.',
-      chips:[cn.theme],pos:p,constellation:cn.name,
+      id:star.id,name:star.name,tag:star.tag,color:cn.color,size:star.size,
+      meta:star.meta,desc:star.desc,chips:star.chips,img:star.img,vid:star.vid,cta:star.cta,
+      pos:p,constellation:cn.name,
     };
     DATA.push(d);made.push(d);
   });
-  form.e.forEach(([a,b])=>{if(a<made.length&&b<made.length)CLINES.push([made[a],made[b]]);});
+  cn.edges.forEach(([a,b])=>{if(a<made.length&&b<made.length)CLINES.push([made[a],made[b]]);});
 });
 
 /* ================= SCENE ================= */
