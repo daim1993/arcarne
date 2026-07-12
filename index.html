@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arcarne | Ideas, Given Gravity</title>
-<meta name="description" content="Arcarne is the interactive spatial portfolio of Diaa Eddin Ahmed: motion design, 3D worlds, storyboards, and creative systems.">
+<title>DAIM Rift | Ideas, Given Gravity</title>
+<meta name="description" content="DAIM Rift is the interactive spatial portfolio of Diaa Eddin Ahmed: motion design, 3D worlds, storyboards, and creative systems.">
 <meta name="theme-color" content="#090806">
-<meta property="og:title" content="Arcarne | Ideas, Given Gravity">
+<meta property="og:title" content="DAIM Rift | Ideas, Given Gravity">
 <meta property="og:description" content="Enter the spatial portfolio of Diaa Eddin Ahmed: motion, storyboards, 3D worlds, and creative systems.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -152,6 +152,14 @@ button,a,input{font:inherit}button,a{-webkit-tap-highlight-color:transparent}but
 .loader-kicker{font:500 .62rem/1 var(--fm)!important;letter-spacing:.32em!important;color:var(--faint)!important;text-transform:uppercase}
 #loader h1{font:600 clamp(2.1rem,7vw,4.8rem)/.9 var(--display);letter-spacing:-.05em;color:var(--ink);background:none;-webkit-background-clip:initial;background-clip:initial;filter:none}
 #loader h1 span{color:var(--signal)}
+.rift-wordmark{position:relative;display:inline-flex;align-items:center;gap:.2em;padding:0 .42em;letter-spacing:.13em!important;isolation:isolate;animation:riftTitleIn 1.15s var(--ease) both}
+.rift-wordmark::before{content:"";position:absolute;inset:-.34em -.46em;z-index:-1;border:1px solid color-mix(in oklch,var(--signal) 54%,transparent);clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);opacity:0;transform:scaleX(.42);animation:riftFrameIn 1.2s .2s var(--ease) forwards}
+.rift-wordmark::after{content:"";position:absolute;left:50%;top:50%;width:.22em;height:.22em;border:1px solid var(--cyan);transform:translate(-50%,-50%) rotate(45deg) scale(0);box-shadow:0 0 18px color-mix(in oklch,var(--cyan) 65%,transparent);animation:riftDiamondIn .75s .65s var(--ease) forwards;pointer-events:none}
+.rift-wordmark .rift-main{color:var(--ink)!important}.rift-wordmark .rift-accent{color:var(--cyan)!important;text-shadow:0 0 22px color-mix(in oklch,var(--cyan) 46%,transparent);animation:riftPulse 3.8s 1.5s ease-in-out infinite}
+@keyframes riftTitleIn{0%{opacity:0;letter-spacing:.48em;transform:translateY(10px)}100%{opacity:1;letter-spacing:.13em;transform:none}}
+@keyframes riftFrameIn{0%{opacity:0;transform:scaleX(.42)}65%{opacity:.9;transform:scaleX(1.06)}100%{opacity:.62;transform:scaleX(1)}}
+@keyframes riftDiamondIn{to{transform:translate(-50%,-50%) rotate(45deg) scale(1)}}
+@keyframes riftPulse{0%,100%{opacity:.82}50%{opacity:1;text-shadow:0 0 32px color-mix(in oklch,var(--cyan) 68%,transparent)}}
 #loader p#lmsg{font:500 .65rem/1.5 var(--fm);letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
 .load-rail{width:min(280px,68vw);height:1px;background:var(--line);overflow:hidden}.load-rail i{display:block;width:42%;height:100%;background:var(--signal);animation:loaderRail 1.7s var(--ease) infinite}
 @keyframes loaderSpin{to{transform:rotate(360deg)}}@keyframes loaderRail{0%{transform:translateX(-120%)}100%{transform:translateX(340%)}}
@@ -331,7 +339,7 @@ body.exploring #intro-scrim{opacity:.16}
   #panel{clip-path:none;border-radius:0}#atlas{clip-path:none}.atlas-head{text-align:left}.atlas-head h2{margin-inline:0}.atlas-head::before{left:42px}
 }
 @media(max-width:430px){#deco-sigil{opacity:.2}.deco-crest{display:none}#intro h1{font-size:clamp(2.15rem,12vw,3.25rem)}}
-@media(prefers-reduced-motion:reduce){#deco-sigil,.deco-draw,.loader-orbit{animation:none!important}}
+@media(prefers-reduced-motion:reduce){#deco-sigil,.deco-draw,.loader-orbit,.rift-wordmark,.rift-wordmark::before,.rift-wordmark::after,.rift-wordmark .rift-accent{animation:none!important}.rift-wordmark{opacity:1;transform:none;letter-spacing:.13em!important}.rift-wordmark::before{opacity:.62;transform:none}.rift-wordmark::after{transform:translate(-50%,-50%) rotate(45deg) scale(1)}}
 </style>
 <style id="cyan-accent">
 :root{--cyan:oklch(78% .13 202);--cyan-high:oklch(87% .09 202)}
@@ -355,11 +363,11 @@ body.exploring #intro-scrim{opacity:.16}
 <body>
 <a id="skip-link" href="#atlas" onclick="openAtlas();return false">Skip to the star atlas</a>
 
-<div id="loader" role="status" aria-label="Loading the Arcarne spatial portfolio">
+<div id="loader" role="status" aria-label="Loading the DAIM Rift spatial portfolio">
   <div class="loader-core">
     <div class="loader-orbit" aria-hidden="true"><i></i></div>
     <p class="loader-kicker">DAIM / Spatial archive</p>
-    <h1>ARC<span>ARNE</span></h1>
+    <h1 class="rift-wordmark"><span class="rift-main">DAIM</span><span class="rift-accent">RIFT</span></h1>
     <p id="lmsg" aria-hidden="true">Mapping the observable work</p>
     <div class="load-rail" aria-hidden="true"><i></i></div>
   </div>
@@ -386,14 +394,14 @@ body.exploring #intro-scrim{opacity:.16}
   </g>
 </svg>
 <header id="topbar">
-  <button class="brandmark" id="brand" type="button" aria-label="Return to the Arcarne observatory">
-    <strong>DAIM<span>1993</span></strong>
+  <button class="brandmark" id="brand" type="button" aria-label="Return to the DAIM Rift observatory">
+    <strong>DAIM<span> RIFT</span></strong>
     <small>Each atom is a universe</small>
   </button>
   <nav class="chrome-actions" aria-label="Primary navigation">
     <button class="chrome-btn" id="tour-trigger" type="button" aria-label="Start the guided flight"><span aria-hidden="true">◎</span><span class="wide">Guided flight</span></button>
     <button class="chrome-btn" id="atlas-trigger" type="button" aria-label="Open the star atlas"><span aria-hidden="true">⌘</span><span class="label">Star atlas</span><kbd>/</kbd></button>
-    <a class="chrome-btn contact" href="mailto:DiaaAhmed501@gmail.com?subject=Project%20inquiry%20from%20Arcarne">Start a project</a>
+    <a class="chrome-btn contact" href="mailto:DiaaAhmed501@gmail.com?subject=Project%20inquiry%20from%20DAIM%20Rift">Start a project</a>
     <button class="chrome-btn" id="mute" type="button" aria-pressed="false" aria-label="Turn sound on"><span aria-hidden="true">◌</span><span class="wide">Sound off</span></button>
   </nav>
 </header>
@@ -401,7 +409,7 @@ body.exploring #intro-scrim{opacity:.16}
 <main>
   <section id="intro" aria-labelledby="intro-title">
     <div class="deco-crest" aria-hidden="true"><span></span><i></i><span></span></div>
-    <p class="intro-kicker">A spatial portfolio by Diaa Eddin Ahmed</p>
+    <p class="intro-kicker">DAIM Rift · A spatial portfolio by Diaa Eddin Ahmed</p>
     <h1 id="intro-title">Ideas, given gravity.</h1>
     <p class="lede"><strong>Motion, storyboards, and 3D worlds</strong> engineered with analytical precision in Dubai. Follow a curated route or chart your own path through the work.</p>
     <div class="intro-actions">
@@ -462,11 +470,11 @@ body.exploring #intro-scrim{opacity:.16}
 </section>
 
 <section id="fallback" hidden aria-labelledby="fallback-title">
-  <p class="intro-kicker">Arcarne / Accessible archive</p>
+  <p class="intro-kicker">DAIM Rift / Accessible archive</p>
   <h1 id="fallback-title">The universe is offline. The work is not.</h1>
   <p>This browser could not start the spatial renderer. You can still review the signature disciplines and contact Diaa directly.</p>
   <div class="fallback-links">
-    <a class="btn solid" href="mailto:DiaaAhmed501@gmail.com?subject=Project%20inquiry%20from%20Arcarne">Email Diaa</a>
+    <a class="btn solid" href="mailto:DiaaAhmed501@gmail.com?subject=Project%20inquiry%20from%20DAIM%20Rift">Email Diaa</a>
     <a class="btn quiet" href="https://wa.me/971504978105" target="_blank" rel="noopener">WhatsApp</a>
   </div>
   <ol class="fallback-list">
@@ -487,7 +495,7 @@ function showFallback(){
   document.getElementById('loader')?.classList.add('done');
   const fallback=document.getElementById('fallback');if(fallback)fallback.hidden=false;
 }
-if(!window.THREE){showFallback();throw new Error('Arcarne renderer unavailable');}
+if(!window.THREE){showFallback();throw new Error('DAIM Rift renderer unavailable');}
 
 const motionQuery=matchMedia('(prefers-reduced-motion: reduce)');
 const reduced=motionQuery.matches;
@@ -583,7 +591,7 @@ function normalizeMainStars(raw){
     else [[item.b1l,item.b1u],[item.b2l,item.b2u],[item.b3l,item.b3u]].forEach(([label,url],buttonIndex)=>{label=cleanText(label,80);url=cleanText(url,2048);if(label&&url)cta.push([label,url,buttonIndex===0?1:0]);});
     const defaultLongitude=((index*137.508+22)%360)-180;
     const defaultLatitude=-52+104*((index+.5)/Math.max(1,source.length));
-    return {id,name,tag:cleanText(item.tag,80)||'Featured signal',meta:cleanText(item.meta,100)||'ARCARNE MAIN STAR',
+    return {id,name,tag:cleanText(item.tag,80)||'Featured signal',meta:cleanText(item.meta,100)||'DAIM RIFT MAIN STAR',
       desc:cleanText(item.desc,600)||('The story of '+name+'.'),chips:chipSource.map(chip=>cleanText(chip,40)).filter(Boolean).slice(0,12),
       color:mainStarColor(item.color,fallback.color),size:mainStarNumber(item.size,fallback.size,1.8,9),
       distance:mainStarNumber(item.distance,72+(index%5)*9,40,155),longitude:mainStarNumber(item.longitude,defaultLongitude,-180,180),latitude:mainStarNumber(item.latitude,defaultLatitude,-72,72),
@@ -672,7 +680,7 @@ function defaultConstellations(){
     const stars=base.members.map((name,mi)=>({
       id:base.name+'-'+mi,name,tag:base.name+' · '+base.theme,
       meta:'CONSTELLATION '+(ci+1).toString().padStart(2,'0')+' / '+CONST_BASE.length,
-      desc:name+'. One star of '+base.name+', the '+base.theme.toLowerCase()+' constellation in the Arcarne sky.',
+      desc:name+'. One star of '+base.name+', the '+base.theme.toLowerCase()+' constellation in the DAIM Rift sky.',
       chips:[base.theme],size:2.6,
     }));
     return {id:base.name.toLowerCase(),name:base.name,theme:base.theme,color:base.color,
@@ -2068,9 +2076,9 @@ function routeInterests(){
 function contactCtas(){
   const interests=routeInterests();
   const focus=interests.length?interests.join(' and '):'motion, 3D, or storyboard work';
-  const subject=encodeURIComponent(`Arcarne project inquiry: ${focus}`);
-  const body=encodeURIComponent(`Hi Diaa,\n\nI explored your ${focus} work in Arcarne and would like to discuss a project.\n\nProject / brand:\nWhat we need:\nTimeline:\nBudget range:\n`);
-  const wa=encodeURIComponent(`Hi Diaa, I explored your ${focus} work in Arcarne and would like to discuss a project.`);
+  const subject=encodeURIComponent(`DAIM Rift project inquiry: ${focus}`);
+  const body=encodeURIComponent(`Hi Diaa,\n\nI explored your ${focus} work in DAIM Rift and would like to discuss a project.\n\nProject / brand:\nWhat we need:\nTimeline:\nBudget range:\n`);
+  const wa=encodeURIComponent(`Hi Diaa, I explored your ${focus} work in DAIM Rift and would like to discuss a project.`);
   return [['Email a project brief',`mailto:DiaaAhmed501@gmail.com?subject=${subject}&body=${body}`,1],['Start on WhatsApp',`https://wa.me/971504978105?text=${wa}`,0]];
 }
 
@@ -2120,7 +2128,7 @@ function renderAtlas(){
     const no=document.createElement('span');no.className='row-no';no.textContent=String(index+1).padStart(2,'0');
     const dot=document.createElement('span');dot.className='row-dot';dot.setAttribute('aria-hidden','true');
     const copy=document.createElement('span');copy.className='row-copy';
-    const strong=document.createElement('strong');strong.textContent=d.name;const small=document.createElement('small');small.textContent=d.tag||d.meta||'Arcarne signal';copy.append(strong,small);
+    const strong=document.createElement('strong');strong.textContent=d.name;const small=document.createElement('small');small.textContent=d.tag||d.meta||'DAIM Rift signal';copy.append(strong,small);
     const mark=document.createElement('span');mark.className='row-mark';mark.textContent=visited.has(String(d.id))?'Remembered':'View';
     button.append(no,dot,copy,mark);li.append(button);frag.append(li);
   });
@@ -2151,13 +2159,13 @@ atlasList.addEventListener('click',event=>{
 });
 
 const TOUR_SOURCE=MAIN_ATLAS_STARS.length?MAIN_ATLAS_STARS:labelSprites.map(label=>label.userData);
-const TOUR=TOUR_SOURCE.map((signal,index)=>({id:String(signal.id),chapter:String(index+1).padStart(2,'0')+' · '+(signal.tag||signal.meta||'Arcarne signal')}));
+const TOUR=TOUR_SOURCE.map((signal,index)=>({id:String(signal.id),chapter:String(index+1).padStart(2,'0')+' · '+(signal.tag||signal.meta||'DAIM Rift signal')}));
 let tourActive=false,tourIndex=0;
 function updateTourUI(){
   if(!TOUR.length)return;
   const stop=TOUR[tourIndex],d=BY_ID.get(stop.id);
   document.getElementById('tour-progress').textContent=`${String(tourIndex+1).padStart(2,'0')}/${String(TOUR.length).padStart(2,'0')}`;
-  document.getElementById('tour-title').textContent=d?.name||'Arcarne signal';document.getElementById('tour-chapter').textContent=stop.chapter;
+  document.getElementById('tour-title').textContent=d?.name||'DAIM Rift signal';document.getElementById('tour-chapter').textContent=stop.chapter;
   document.getElementById('tour-prev').disabled=tourIndex===0;document.getElementById('tour-next').textContent=tourIndex===TOUR.length-1?'Finish':'Next →';
 }
 function visitTour(index){
@@ -2335,13 +2343,13 @@ function fillPanel(d){
   const hex='#'+Number(d.color||C.cyan).toString(16).padStart(6,'0');panel.style.setProperty('--panel-accent',hex);
   document.getElementById('p-code').textContent=
     'ARC-'+(h%900+100)+' · RA '+(h%24)+'h'+(h%60)+'m · DEC '+((h>>5)%90)+'°';
-  document.getElementById('p-tag').textContent=d.tag||'Arcarne signal';
+  document.getElementById('p-tag').textContent=d.tag||'DAIM Rift signal';
   document.getElementById('p-title').textContent=d.name||'Untitled signal';
   document.getElementById('p-meta').textContent=d.meta||'';
   const interests=routeInterests();
   const description=d.id==='contact'&&interests.length
     ?`You explored ${interests.join(' and ')}. Bring that route into the brief, and let us shape the next visual world together.`
-    :(d.desc||'A signal in the Arcarne creative universe.');
+    :(d.desc||'A signal in the DAIM Rift creative universe.');
   document.getElementById('p-desc').textContent=description;
   document.getElementById('p-memory').textContent=d.id==='contact'
     ?`${visited.size} signals shaped this inquiry`
@@ -2349,7 +2357,7 @@ function fillPanel(d){
   const media=document.getElementById('p-media'),mediaEl=createMediaElement(d);media.replaceChildren(...(mediaEl?[mediaEl]:[]));
   const chips=document.getElementById('p-chips'),chipFrag=document.createDocumentFragment();
   (d.chips||[]).slice(0,12).forEach(value=>{const chip=document.createElement('span');chip.className='chip';chip.textContent=String(value).slice(0,40);chipFrag.append(chip);});chips.replaceChildren(chipFrag);
-  const ctas=d.id==='contact'?contactCtas():(d.cta||[['Discuss a similar project','mailto:DiaaAhmed501@gmail.com?subject=Project%20inquiry%20from%20Arcarne',1]]);
+  const ctas=d.id==='contact'?contactCtas():(d.cta||[['Discuss a similar project','mailto:DiaaAhmed501@gmail.com?subject=Project%20inquiry%20from%20DAIM%20Rift',1]]);
   const ctaWrap=document.getElementById('p-cta'),ctaFrag=document.createDocumentFragment();
   ctas.slice(0,3).forEach(([text,raw,primary])=>{
     const u=safeUrl(raw,['http:','https:','mailto:','tel:']);if(!u)return;
