@@ -1154,15 +1154,15 @@ DATA.forEach(d=>{
   /* layered bloom: white-hot heart + tinted gaussian halo + fine spikes */
   const heart=new THREE.Sprite(new THREE.SpriteMaterial({map:SOFT,
     color:new THREE.Color(0xf3ead7).lerp(new THREE.Color(d.color),.3),  // pearl-tinted core
-    transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false}));
-  heart.scale.set(d.size*.8,d.size*.8,1);
+    transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false,fog:false}));
+  heart.scale.set(d.size*(d.constellation?1.12:.95),d.size*(d.constellation?1.12:.95),1);
   const flare=new THREE.Sprite(new THREE.SpriteMaterial({map:SPIKE,color:d.color,
-    transparent:true,opacity:.6,blending:THREE.AdditiveBlending,depthWrite:false,
+    transparent:true,opacity:d.constellation ? .95 : .88,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false,fog:false,
     rotation:Math.random()*Math.PI}));
-  flare.scale.set(d.size*1.6,d.size*1.6,1);
+  flare.scale.set(d.size*(d.constellation?2.25:1.85),d.size*(d.constellation?2.25:1.85),1);
   const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:SOFT,color:d.color,
-    transparent:true,opacity:.3,blending:THREE.AdditiveBlending,depthWrite:false}));
-  halo.scale.set(d.size*3.2,d.size*3.2,1);
+    transparent:true,opacity:d.constellation ? .7 : .52,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false,fog:false}));
+  halo.scale.set(d.size*(d.constellation?5.2:4.1),d.size*(d.constellation?5.2:4.1),1);
   // invisible hit-sphere so small stars stay easy to click
   const hit=new THREE.Mesh(new THREE.SphereGeometry(Math.max(3.2,d.size*1.4),8,8),
     new THREE.MeshBasicMaterial({visible:false}));
@@ -1406,8 +1406,8 @@ const linePos=new Float32Array(CLINES.length*6);
 const lineGeo=new THREE.BufferGeometry();
 lineGeo.setAttribute('position',new THREE.BufferAttribute(linePos,3));
 scene.add(new THREE.LineSegments(lineGeo,
-  glowLine(new THREE.LineBasicMaterial({color:0x8f7742,transparent:true,opacity:.2,
-    blending:THREE.AdditiveBlending}),.28)));
+  glowLine(new THREE.LineBasicMaterial({color:0xd9b86c,transparent:true,opacity:.58,
+    blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false,fog:false}),.72)));
 const _dir=new THREE.Vector3();
 function updateLines(){
   updateSet(CLINES,linePos,lineGeo);
@@ -1437,8 +1437,8 @@ const aPos=new Float32Array(ALINES.length*6);
 const aGeo=new THREE.BufferGeometry();
 aGeo.setAttribute('position',new THREE.BufferAttribute(aPos,3));
 scene.add(new THREE.LineSegments(aGeo,
-  glowLine(new THREE.LineBasicMaterial({color:0xc6974f,transparent:true,opacity:.2,
-    blending:THREE.AdditiveBlending}),.3)));
+  glowLine(new THREE.LineBasicMaterial({color:0xe0b96b,transparent:true,opacity:.46,
+    blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false,fog:false}),.58)));
 /* Remembered discoveries stay in the atlas and counter; no route connector is drawn. */
 function updateSet(list,buf,geo){
   for(let i=0;i<list.length;i++){
@@ -1461,14 +1461,14 @@ for(let g=0;g<36;g++){
   for(let i=0;i<n;i++){
     const p=prev.clone().add(new THREE.Vector3((Math.random()-.5)*60,(Math.random()-.5)*45,(Math.random()-.5)*60));
     if(i>0)pts.push(prev.clone(),p.clone());
-    const st=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX,color:0xc9b777,
-      transparent:true,opacity:.5,blending:THREE.AdditiveBlending,depthWrite:false}));
-    st.position.copy(p);const sc=2.5+Math.random()*3;st.scale.set(sc,sc,1);scene.add(st);
+    const st=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX,color:0xe1ca82,
+      transparent:true,opacity:.78,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false,fog:false}));
+    st.position.copy(p);const sc=3.2+Math.random()*3.6;st.scale.set(sc,sc,1);scene.add(st);
     prev.copy(p);
   }
   scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),
-    glowLine(new THREE.LineBasicMaterial({color:0x79643b,transparent:true,opacity:.1,
-      blending:THREE.AdditiveBlending}),.14)));
+    glowLine(new THREE.LineBasicMaterial({color:0xb69558,transparent:true,opacity:.28,
+      blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false,fog:false}),.34)));
 }
 /* far spiral galaxies */
 function spiralTex(hue){
@@ -2312,11 +2312,13 @@ function loop(){
       }
     }
     const k=1+(reduced?0:Math.sin(t*2+d.tw)*.07)+(hover===d?.5:0)+fl;
-    d.flare.scale.set(d.size*1.6*k,d.size*1.6*k,1);
+    const bloomScale=d.constellation?2.25:1.85;
+    d.flare.scale.set(d.size*bloomScale*k,d.size*bloomScale*k,1);
     if(!reduced)d.flare.material.rotation+=d.rs*dt*60;
     if(!reduced&&d.flare2)d.flare2.material.rotation-=d.rs*1.6*dt*60;
-    d.heart.scale.set(d.size*.8*k,d.size*.8*k,1);
-    d.halo.material.opacity=.24+Math.sin(t*1.4+d.tw)*.07+(hover===d?.35:0)+fl*.3;
+    const coreScale=d.constellation?1.12:.95;
+    d.heart.scale.set(d.size*coreScale*k,d.size*coreScale*k,1);
+    d.halo.material.opacity=(d.constellation ? .56 : .42)+Math.sin(t*1.4+d.tw)*.1+(hover===d?.45:0)+fl*(d.constellation ? .45 : .38);
     /* only hovered star reacts to mouse — eases in, eases back */
     const tx=(hover===d)?smx*3.5:0,ty=(hover===d)?smy*2.5:0;
     d.ox+=(tx-d.ox)*.07;d.oy+=(ty-d.oy)*.07;
