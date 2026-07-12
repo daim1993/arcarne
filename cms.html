@@ -565,7 +565,8 @@ addEventListener('pointermove',event=>{
   if(!dragNode)return;const svg=document.getElementById('pattern_'+dragNode.ci),constellation=constellationState[dragNode.ci];if(!svg||!constellation)return;
   const rect=svg.getBoundingClientRect(),dx=(event.clientX-dragNode.startX)/rect.width*3.25,dy=(event.clientY-dragNode.startY)/rect.height*3.05;
   constellation.points[dragNode.si][0]=clamp(dragNode.startPoint[0]+dx,-1.4,1.4,0);
-  constellation.points[dragNode.si][1]=clamp(dragNode.startPoint[1]-dy,-1.4,1.4,0);
+  if(patternViews.get(dragNode.ci)?.mode==='top')constellation.points[dragNode.si][2]=clamp(dragNode.startPoint[2]-dy,-1,1,0);
+  else constellation.points[dragNode.si][1]=clamp(dragNode.startPoint[1]-dy,-1.4,1.4,0);
   if(Math.hypot(event.clientX-dragNode.startX,event.clientY-dragNode.startY)>4)dragNode.moved=true;
   renderPattern(dragNode.ci);
 });
