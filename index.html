@@ -538,7 +538,7 @@ const cleanText=(value,max=220)=>typeof value==='string'?value.trim().slice(0,ma
 const C={cyan:0x62d5e4,violet:0xb7934f,magenta:0xc7896e,amber:0xd4a85f,green:0x9eaa82,ice:0xe5dcc3};
 
 /* ================= MAJOR STARS ================= */
-const DATA=[
+const DATA_DEFAULTS=[
  {id:'sentient',name:'Sentient by Elysian',tag:'Storyboard / Cinematic',meta:'2024–PRESENT · UAE',color:C.cyan,size:5,
   desc:'Cinematic boards turn abstract brand ideas into shots teams can see, align on, and produce.',chips:['Storyboards','Narrative','Cinematic']},
  {id:'dewa',name:'DEWA Storyboard Collage',tag:'Visual Narrative',meta:'STORYBOARD DEVELOPMENT',color:C.violet,size:4.4,
@@ -573,6 +573,31 @@ const DATA=[
   chips:['Motion','3D','Storyboards'],
   cta:[['Email Diaa','mailto:DiaaAhmed501@gmail.com',1],['WhatsApp','https://wa.me/971504978105',0]]},
 ];
+const mainStarNumber=(value,fallback,min,max)=>{const number=Number(value);return Number.isFinite(number)?Math.min(max,Math.max(min,number)):fallback;};
+const mainStarColor=(value,fallback)=>{if(typeof value==='number'&&Number.isFinite(value))return Math.max(0,Math.min(0xffffff,value|0));const text=String(value||'').trim();return /^#[0-9a-f]{6}$/i.test(text)?parseInt(text.slice(1),16):fallback;};
+const mainStarSlug=(value,fallback)=>cleanText(value,72).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||fallback;
+function normalizeMainStars(raw){
+  const custom=Array.isArray(raw);
+  const source=custom?raw:DATA_DEFAULTS.map(star=>Object.assign({},star,CFG.stars[star.id]||{}));
+  return source.slice(0,48).map((item,index)=>{
+    if(!item||typeof item!=='object'||Array.isArray(item))return null;
+    const fallback=DATA_DEFAULTS[index%DATA_DEFAULTS.length]||DATA_DEFAULTS[0];
+    const name=cleanText(item.name,100)||('Main star '+(index+1));
+    const id=mainStarSlug(item.id||name,'main-star-'+index);
+    const chipSource=Array.isArray(item.chips)?item.chips:String(item.chips||'Featured').split(',');
+    const cta=[];
+    if(Array.isArray(item.cta))item.cta.slice(0,3).forEach((button,buttonIndex)=>{if(!Array.isArray(button))return;const label=cleanText(button[0],80),url=cleanText(button[1],2048);if(label&&url)cta.push([label,url,buttonIndex===0?1:0]);});
+    else [[item.b1l,item.b1u],[item.b2l,item.b2u],[item.b3l,item.b3u]].forEach(([label,url],buttonIndex)=>{label=cleanText(label,80);url=cleanText(url,2048);if(label&&url)cta.push([label,url,buttonIndex===0?1:0]);});
+    const defaultLongitude=((index*137.508+22)%360)-180;
+    const defaultLatitude=-52+104*((index+.5)/Math.max(1,source.length));
+    return {id,name,tag:cleanText(item.tag,80)||'Featured signal',meta:cleanText(item.meta,100)||'ARCARNE MAIN STAR',
+      desc:cleanText(item.desc,600)||('The story of '+name+'.'),chips:chipSource.map(chip=>cleanText(chip,40)).filter(Boolean).slice(0,12),
+      color:mainStarColor(item.color,fallback.color),size:mainStarNumber(item.size,fallback.size,1.8,9),
+      distance:mainStarNumber(item.distance,72+(index%5)*9,40,155),longitude:mainStarNumber(item.longitude,defaultLongitude,-180,180),latitude:mainStarNumber(item.latitude,defaultLatitude,-72,72),
+      img:cleanText(item.img,2048),vid:cleanText(item.vid,2048),cta};
+  }).filter(Boolean);
+}
+const DATA=normalizeMainStars(RAW_CFG.mainStars);
 const MAJOR_COUNT=DATA.length;
 
 /* ================= 12 CONSTELLATIONS ================= */
@@ -591,19 +616,6 @@ const CONST_BASE=[
  {name:'PRAXIS',theme:'Training',color:C.green,members:['Ben Marriott Motion','School of Motion','Blender Essentials','C4D Masterclass','3D Animation Intro','UX Fundamentals','Daily Renders']},
 ];
 
-/* CMS: merge bounded, text-only star content overrides */
-DATA.forEach(d=>{
-  const o=CFG.stars[d.id];if(!o||typeof o!=='object'||Array.isArray(o))return;
-  const name=cleanText(o.name,100),tag=cleanText(o.tag,80),meta=cleanText(o.meta,100),desc=cleanText(o.desc,600);
-  if(name)d.name=name;if(tag)d.tag=tag;if(meta)d.meta=meta;if(desc)d.desc=desc;
-  const chips=cleanText(o.chips,500);if(chips)d.chips=chips.split(',').map(s=>s.trim().slice(0,40)).filter(Boolean).slice(0,12);
-  d.img=cleanText(o.img,2048);d.vid=cleanText(o.vid,2048);
-  const btns=[];
-  [[o.b1l,o.b1u],[o.b2l,o.b2u],[o.b3l,o.b3u]].forEach(([l,u],i)=>{
-    const label=cleanText(l,80),url=cleanText(u,2048);if(label&&url)btns.push([label,url,i===0?1:0]);
-  });
-  if(btns.length)d.cta=btns;
-});
 function safeUrl(raw,protocols){
   try{const u=new URL(String(raw),location.href);return protocols.includes(u.protocol)?u:null}catch(e){return null}
 }
@@ -631,10 +643,10 @@ function createMediaElement(d){
 /* seeded rng */
 let seed=1337;const rnd=()=> (seed=(seed*16807)%2147483647)/2147483647;
 
-/* place major stars — inner shell */
-DATA.forEach((d,i)=>{
-  const phi=Math.acos(1-2*((i+.5)/DATA.length)),th=Math.PI*(1+Math.sqrt(5))*i+rnd()*.5,r=60+rnd()*55;
-  d.pos=new THREE.Vector3(r*Math.sin(phi)*Math.cos(th),(r*Math.cos(phi))*.55,r*Math.sin(phi)*Math.sin(th));
+/* place CMS-managed main stars on an editable inner shell */
+DATA.forEach(d=>{
+  const longitude=d.longitude*Math.PI/180,latitude=d.latitude*Math.PI/180,ring=Math.cos(latitude)*d.distance;
+  d.pos=new THREE.Vector3(ring*Math.cos(longitude),Math.sin(latitude)*d.distance*.72,ring*Math.sin(longitude));
 });
 
 /* zodiac-inspired line formations: recognizable silhouettes instead of random zigzags */
@@ -1523,7 +1535,7 @@ CONST.forEach((cn,ci)=>{
 /* career line — dynamic, sphere-trimmed */
 const ALINES=[];
 {
-  const ids=['artdim','jump','7g','nova','watch','sentient'].map(id=>DATA.find(d=>d.id===id));
+  const ids=['artdim','jump','7g','nova','watch','sentient'].map(id=>DATA.find(d=>d.id===id)).filter(Boolean);
   for(let i=1;i<ids.length;i++)ALINES.push([ids[i-1],ids[i]]);
 }
 const aPos=new Float32Array(ALINES.length*6);
@@ -2129,9 +2141,11 @@ const TOUR=[
   {id:'patata',chapter:'05 · Characters carry memory'},
   {id:'mind',chapter:'06 · Logic shapes imagination'},
   {id:'contact',chapter:'07 · Build the next universe'}
-];
+].filter(stop=>BY_ID.has(stop.id));
+if(!TOUR.length)DATA.slice(0,7).forEach((d,index)=>TOUR.push({id:d.id,chapter:String(index+1).padStart(2,'0')+' · '+d.tag}));
 let tourActive=false,tourIndex=0;
 function updateTourUI(){
+  if(!TOUR.length)return;
   const stop=TOUR[tourIndex],d=BY_ID.get(stop.id);
   document.getElementById('tour-progress').textContent=`${String(tourIndex+1).padStart(2,'0')}/${String(TOUR.length).padStart(2,'0')}`;
   document.getElementById('tour-title').textContent=d?.name||'Arcarne signal';document.getElementById('tour-chapter').textContent=stop.chapter;
@@ -2141,6 +2155,7 @@ function visitTour(index){
   tourIndex=Math.max(0,Math.min(TOUR.length-1,index));updateTourUI();const d=BY_ID.get(TOUR[tourIndex].id);if(d){sfx.fly();flyTo(d);}
 }
 function startTour(index=0){
+  if(!TOUR.length){openAtlas();return;}
   dismissIntro();closeAtlas();tourActive=true;document.body.classList.add('touring');tourbarEl.classList.add('open');tourbarEl.setAttribute('aria-hidden','false');
   document.getElementById('tour-trigger').setAttribute('aria-pressed','true');document.getElementById('tour-trigger').setAttribute('aria-label','Exit the guided flight');visitTour(index);
 }
@@ -2368,7 +2383,7 @@ function loop(){
   const pointerEase=1-Math.exp(-2.45*dt);smx+=(mouse.x-smx)*pointerEase;smy+=(mouse.y-smy)*pointerEase;
   /* flicker wave scheduler */
   if(!reduced&&!lowPower)nextFlick-=dt;
-  if(!reduced&&!lowPower&&nextFlick<=0){
+  if(!reduced&&!lowPower&&DATA.length&&nextFlick<=0){
     nextFlick=14+Math.random()*6;
     for(let i=0;i<12;i++){
       const d=DATA[(Math.random()*DATA.length)|0];
@@ -2379,7 +2394,7 @@ function loop(){
   }
   /* name whisper scheduler */
   if(!reduced&&!lowPower)nextName-=dt;
-  if(!reduced&&!lowPower&&nextName<=0&&NAMES.length<2){
+  if(!reduced&&!lowPower&&DATA.length&&nextName<=0&&NAMES.length<2){
     nextName=3.8+Math.random()*2.6;
     const d=DATA[(Math.random()*DATA.length)|0];
     const spr=textSprite(d.name.toUpperCase(),'#'+d.color.toString(16).padStart(6,'0'));

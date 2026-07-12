@@ -102,6 +102,7 @@ textarea{min-height:76px;resize:vertical;font-family:var(--body);font-size:.8rem
 input[type=text]::placeholder,textarea::placeholder{color:var(--faint);opacity:.68}
 input[type=text]:focus,textarea:focus{border-color:var(--gold);background:#0a0b10;box-shadow:inset 0 0 0 1px rgba(216,189,114,.16)}
 .section-actions{display:flex;justify-content:flex-end;margin:-52px 0 18px}
+.main-star-actions{gap:8px}
 .compact{min-height:34px;padding:7px 11px;font-size:.56rem}
 .constellation-list{display:grid;gap:18px}
 .constellation-editor{border:1px solid var(--line-strong);background:var(--panel)}
@@ -143,7 +144,7 @@ input[type=color]{padding:5px;cursor:pointer}input[type=color]::-webkit-color-sw
   main{gap:44px;margin-top:48px}.section-heading{grid-template-columns:auto minmax(0,1fr);gap:12px}.section-rule{grid-column:1/-1}.section-description{margin-left:0}
   .grid{grid-template-columns:1fr}.fields{grid-template-columns:1fr;padding:14px}.fields .full{grid-column:auto}
   summary{grid-template-columns:34px minmax(0,1fr) 12px;padding-inline:13px}summary small{display:none}
-  .section-actions{margin:0 0 14px;justify-content:stretch}.section-actions button{width:100%}.constellation-top{grid-template-columns:34px minmax(0,1fr)}.constellation-top .danger{grid-column:1/-1;width:100%}.pattern-shell,.constellation-controls{padding:14px}.pattern-svg{min-height:220px}.constellation-controls{grid-template-columns:1fr}.control-field.full{grid-column:auto}.pattern-foot{display:grid}.constellation-bottom{align-items:stretch;flex-direction:column}.constellation-bottom button{width:100%}
+  .section-actions{margin:0 0 14px;justify-content:stretch;flex-direction:column}.section-actions button{width:100%}.constellation-top{grid-template-columns:34px minmax(0,1fr)}.constellation-top .danger{grid-column:1/-1;width:100%}.pattern-shell,.constellation-controls{padding:14px}.pattern-svg{min-height:220px}.constellation-controls{grid-template-columns:1fr}.control-field.full{grid-column:auto}.pattern-foot{display:grid}.constellation-bottom{align-items:stretch;flex-direction:column}.constellation-bottom button{width:100%}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
@@ -217,7 +218,8 @@ input[type=text]:focus,textarea:focus{border-color:var(--cyan);box-shadow:inset 
         <h2 id="stars-title">Main stars · Content</h2>
         <span class="section-rule" aria-hidden="true"></span>
       </div>
-      <p class="section-description">Edit the fifteen primary signals. Empty project links remain hidden in the universe until they are populated.</p>
+      <p class="section-description">Create the primary signals from scratch. Every main star controls its content, glow, color, and position in the inner universe.</p>
+      <div class="section-actions main-star-actions"><button type="button" onclick="addMainStar()">Add main star</button><button class="danger" type="button" onclick="clearMainStars()">Clear main-star space</button></div>
       <div class="stars-list" id="stars"></div>
     </section>
 
@@ -360,6 +362,31 @@ function normalizeEditorConstellations(raw){
   });
 }
 let constellationState=normalizeEditorConstellations(cfg.constellations);
+const MAIN_STAR_COLORS=['#62d5e4','#b7934f','#c7896e','#d4a85f','#b7934f','#9eaa82','#c7896e','#62d5e4','#d4a85f','#d4a85f','#d4a85f','#d4a85f','#62d5e4','#b7934f','#c7896e'];
+const MAIN_STAR_SIZES=[5,4.4,4.4,4.6,4.6,4.6,4.2,4,3.6,3.6,3.6,3.6,5.4,5.4,6.5];
+function makeDefaultMainStars(){
+  return STAR_DEFAULTS.map((star,index)=>{
+    const legacy=cfg.stars?.[star.id]||{},count=STAR_DEFAULTS.length;
+    return Object.assign({color:MAIN_STAR_COLORS[index]||'#62d5e4',size:MAIN_STAR_SIZES[index]||4,
+      distance:72+(index%5)*9,longitude:((index*137.508+22)%360)-180,latitude:-52+104*((index+.5)/count),
+      img:'',vid:'',b1l:'',b1u:'',b2l:'',b2u:'',b3l:'',b3u:''},star,
+      star.id==='contact'?{b1l:'Email Diaa',b1u:'mailto:DiaaAhmed501@gmail.com',b2l:'WhatsApp',b2u:'https://wa.me/971504978105'}:{},legacy);
+  });
+}
+function normalizeMainStarState(raw){
+  const source=Array.isArray(raw)?raw:makeDefaultMainStars();
+  return source.slice(0,48).map((item,index)=>{
+    const value=item&&typeof item==='object'&&!Array.isArray(item)?item:{},count=Math.max(1,source.length);
+    const name=String(value.name||('Main star '+(index+1))).slice(0,100),id=slug(value.id||name,'main-star-'+index);
+    return {id,name,tag:String(value.tag||'Featured signal').slice(0,80),meta:String(value.meta||'ARCARNE MAIN STAR').slice(0,100),
+      desc:String(value.desc||('The story of '+name+'.')).slice(0,600),chips:String(Array.isArray(value.chips)?value.chips.join(', '):(value.chips||'Featured')).slice(0,500),
+      color:/^#[0-9a-f]{6}$/i.test(value.color)?value.color:'#62d5e4',size:clamp(value.size,1.8,9,4),
+      distance:clamp(value.distance,40,155,72+(index%5)*9),longitude:clamp(value.longitude,-180,180,((index*137.508+22)%360)-180),latitude:clamp(value.latitude,-72,72,-52+104*((index+.5)/count)),
+      img:String(value.img||'').slice(0,2048),vid:String(value.vid||'').slice(0,2048),b1l:String(value.b1l||'').slice(0,80),b1u:String(value.b1u||'').slice(0,2048),
+      b2l:String(value.b2l||'').slice(0,80),b2u:String(value.b2u||'').slice(0,2048),b3l:String(value.b3l||'').slice(0,80),b3u:String(value.b3u||'').slice(0,2048)};
+  });
+}
+let mainStarState=normalizeMainStarState(cfg.mainStars);
 
 /* Build settings UI. */
 const settingsWrap=document.getElementById('settings');
@@ -373,30 +400,50 @@ SETTINGS.forEach(([key,label,min,max,def,step],index)=>{
   settingsWrap.appendChild(item);
 });
 
-/* Build stars UI. */
+/* Build dynamic main-star editor. */
 const starsWrap=document.getElementById('stars');
-STAR_DEFAULTS.forEach((star,index)=>{
-  const value=Object.assign({},star,cfg.stars[star.id]||{});
-  const item=document.createElement('details');
-  item.style.setProperty('--i',index);
-  item.innerHTML=`<summary><span class="star-no">${String(index+1).padStart(2,'0')}</span><span class="star-name">${esc(value.name)}</span><small>${esc(star.id)}</small><span class="summary-mark" aria-hidden="true"></span></summary>
+function setMainStarField(index,key,value,outputId){
+  const star=mainStarState[index];if(!star)return;
+  if(['size','distance','longitude','latitude'].includes(key))value=Number(value);
+  star[key]=value;
+  if(outputId){const output=document.getElementById(outputId);if(output)output.textContent=value;}
+  if(key==='name'){const summary=document.querySelector(`[data-main-star="${index}"] .star-name`);if(summary)summary.textContent=value||'Untitled main star';}
+}
+function addMainStar(){
+  if(mainStarState.length>=48){flash('Maximum 48 main stars','error');return;}
+  const index=mainStarState.length,id='main-'+Date.now().toString(36),longitude=((index*137.508+22)%360)-180;
+  mainStarState.push({id,name:'New main star',tag:'Featured signal',meta:'ARCARNE MAIN STAR',desc:'Add this star\'s story.',chips:'Featured',color:'#62d5e4',size:4,
+    distance:78+(index%5)*8,longitude,latitude:clamp(-42+index*11,-64,64,0),img:'',vid:'',b1l:'',b1u:'',b2l:'',b2u:'',b3l:'',b3u:''});
+  renderMainStars();starsWrap.lastElementChild?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});flash('Main star added');
+}
+function removeMainStar(index){
+  const star=mainStarState[index];if(!star||!confirm('Remove '+star.name+' from the main-star space?'))return;
+  mainStarState.splice(index,1);renderMainStars();flash('Main star removed');
+}
+function clearMainStars(){
+  if(!mainStarState.length){flash('Main-star space is already clear');return;}
+  if(!confirm('Clear every main star? Constellations will stay intact. Save changes to update the universe.'))return;
+  mainStarState=[];renderMainStars();flash('Main-star space cleared');
+}
+function renderMainStars(){
+  if(!mainStarState.length){starsWrap.innerHTML='<div class="constellation-empty"><strong>Main-star space is clear.</strong><br>Add a main star when you are ready to build the inner universe.</div>';return;}
+  starsWrap.innerHTML=mainStarState.map((star,index)=>`<details data-main-star="${index}"><summary><span class="star-no">${String(index+1).padStart(2,'0')}</span><span class="star-name">${esc(star.name)}</span><small>${esc(star.id)}</small><span class="summary-mark" aria-hidden="true"></span></summary>
   <div class="fields">
-    <div><label for="${star.id}_name">Name</label><input type="text" id="${star.id}_name" value="${esc(value.name)}"></div>
-    <div><label for="${star.id}_tag">Tag</label><input type="text" id="${star.id}_tag" value="${esc(value.tag)}"></div>
-    <div class="full"><label for="${star.id}_meta">Meta line</label><input type="text" id="${star.id}_meta" value="${esc(value.meta)}"></div>
-    <div class="full"><label for="${star.id}_desc">Description</label><textarea id="${star.id}_desc">${esc(value.desc)}</textarea></div>
-    <div class="full"><label for="${star.id}_chips">Chips (comma separated)</label><input type="text" id="${star.id}_chips" value="${esc(value.chips)}"></div>
-    <div class="full"><label for="${star.id}_img">Image URL (shown in popup)</label><input type="text" id="${star.id}_img" value="${esc(value.img)}" placeholder="https://example.com/image.webp"></div>
-    <div class="full"><label for="${star.id}_vid">Video URL (YouTube, Vimeo, or MP4; overrides image)</label><input type="text" id="${star.id}_vid" value="${esc(value.vid)}" placeholder="https://youtu.be/... or video.mp4"></div>
-    <div><label for="${star.id}_b1l">Button 1 label</label><input type="text" id="${star.id}_b1l" value="${esc(value.b1l)}" placeholder="View project"></div>
-    <div><label for="${star.id}_b1u">Button 1 link</label><input type="text" id="${star.id}_b1u" value="${esc(value.b1u)}" placeholder="https://behance.net/..."></div>
-    <div><label for="${star.id}_b2l">Button 2 label</label><input type="text" id="${star.id}_b2l" value="${esc(value.b2l)}"></div>
-    <div><label for="${star.id}_b2u">Button 2 link</label><input type="text" id="${star.id}_b2u" value="${esc(value.b2u)}"></div>
-    <div><label for="${star.id}_b3l">Button 3 label</label><input type="text" id="${star.id}_b3l" value="${esc(value.b3l)}"></div>
-    <div><label for="${star.id}_b3u">Button 3 link</label><input type="text" id="${star.id}_b3u" value="${esc(value.b3u)}"></div>
-  </div>`;
-  starsWrap.appendChild(item);
-});
+    <div><label for="m_${index}_name">Name</label><input type="text" id="m_${index}_name" value="${esc(star.name)}" oninput="setMainStarField(${index},'name',this.value)"></div>
+    <div><label for="m_${index}_tag">Tag</label><input type="text" id="m_${index}_tag" value="${esc(star.tag)}" oninput="setMainStarField(${index},'tag',this.value)"></div>
+    <div><label for="m_${index}_color">Signal color</label><input type="color" id="m_${index}_color" value="${esc(star.color)}" oninput="setMainStarField(${index},'color',this.value)"></div>
+    <div><label for="m_${index}_size">Glow size</label><input type="number" id="m_${index}_size" min="1.8" max="9" step=".1" value="${star.size}" oninput="setMainStarField(${index},'size',this.value)"></div>
+    ${[['distance','Distance from center',40,155,1],['longitude','Orbit longitude',-180,180,1],['latitude','Orbit latitude',-72,72,1]].map(([key,label,min,max,step])=>`<div class="${key==='distance'?'full':''}"><label for="m_${index}_${key}"><span>${label}</span> <output id="m_${index}_${key}_out">${Math.round(star[key]*10)/10}</output></label><input type="range" id="m_${index}_${key}" min="${min}" max="${max}" step="${step}" value="${star[key]}" oninput="setMainStarField(${index},'${key}',this.value,'m_${index}_${key}_out')"></div>`).join('')}
+    <div class="full"><label for="m_${index}_meta">Meta line</label><input type="text" id="m_${index}_meta" value="${esc(star.meta)}" oninput="setMainStarField(${index},'meta',this.value)"></div>
+    <div class="full"><label for="m_${index}_desc">Description</label><textarea id="m_${index}_desc" oninput="setMainStarField(${index},'desc',this.value)">${esc(star.desc)}</textarea></div>
+    <div class="full"><label for="m_${index}_chips">Chips (comma separated)</label><input type="text" id="m_${index}_chips" value="${esc(star.chips)}" oninput="setMainStarField(${index},'chips',this.value)"></div>
+    <div class="full"><label for="m_${index}_img">Image URL</label><input type="text" id="m_${index}_img" value="${esc(star.img)}" placeholder="https://example.com/image.webp" oninput="setMainStarField(${index},'img',this.value)"></div>
+    <div class="full"><label for="m_${index}_vid">Video URL</label><input type="text" id="m_${index}_vid" value="${esc(star.vid)}" placeholder="https://youtu.be/... or video.mp4" oninput="setMainStarField(${index},'vid',this.value)"></div>
+    ${[1,2,3].map(button=>`<div><label for="m_${index}_b${button}l">Button ${button} label</label><input type="text" id="m_${index}_b${button}l" value="${esc(star['b'+button+'l'])}" oninput="setMainStarField(${index},'b${button}l',this.value)"></div><div><label for="m_${index}_b${button}u">Button ${button} link</label><input type="text" id="m_${index}_b${button}u" value="${esc(star['b'+button+'u'])}" oninput="setMainStarField(${index},'b${button}u',this.value)"></div>`).join('')}
+    <div class="full"><button class="danger compact" type="button" onclick="removeMainStar(${index})">Remove this main star</button></div>
+  </div></details>`).join('');
+}
+renderMainStars();
 
 /* Build constellation architect UI. */
 const constellationWrap=document.getElementById('constellations');
@@ -512,16 +559,8 @@ function renderConstellations(){
 renderConstellations();
 
 function collect(){
-  const output={stars:{},constellations:normalizeEditorConstellations(constellationState)};
+  const output={mainStars:normalizeMainStarState(mainStarState),constellations:normalizeEditorConstellations(constellationState)};
   SETTINGS.forEach(([key])=>output[key]=parseFloat(document.getElementById('s_'+key).value));
-  STAR_DEFAULTS.forEach(star=>{
-    const get=field=>document.getElementById(star.id+'_'+field).value;
-    const record={name:get('name'),tag:get('tag'),meta:get('meta'),desc:get('desc'),chips:get('chips'),
-      img:get('img'),vid:get('vid'),b1l:get('b1l'),b1u:get('b1u'),b2l:get('b2l'),b2u:get('b2u'),b3l:get('b3l'),b3u:get('b3u')};
-    const defaults={name:star.name,tag:star.tag,meta:star.meta,desc:star.desc,chips:star.chips,
-      img:'',vid:'',b1l:'',b1u:'',b2l:'',b2u:'',b3l:'',b3u:''};
-    if(JSON.stringify(record)!==JSON.stringify(defaults))output.stars[star.id]=record;
-  });
   return output;
 }
 function save(){
