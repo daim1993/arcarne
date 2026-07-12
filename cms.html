@@ -481,6 +481,11 @@ function setStarDepth(ci,si,value,outputId){
   const point=constellationState[ci]?.points[si];if(!point)return;
   point[2]=clamp(value,-1,1,0);const output=document.getElementById(outputId);if(output)output.textContent=Number(point[2]).toFixed(2);
 }
+function setStarHeight(ci,si,value,outputId){
+  const point=constellationState[ci]?.points[si];if(!point)return;
+  point[1]=-clamp(value,-1.4,1.4,0);const output=document.getElementById(outputId);if(output)output.textContent=Number(-point[1]).toFixed(2);
+  renderPattern(ci);
+}
 function addStarData(ci){
   const constellation=constellationState[ci];if(!constellation||constellation.stars.length>=20)return;
   const si=constellation.stars.length,angle=si/Math.max(5,si+1)*Math.PI*2-Math.PI/2;
@@ -555,7 +560,7 @@ function renderConstellations(){
   if(!constellationState.length){constellationWrap.innerHTML='<div class="constellation-empty">No interactive constellations. Add one to begin shaping the sky.</div>';return;}
   constellationWrap.innerHTML=constellationState.map((constellation,ci)=>`<article class="constellation-editor" data-constellation="${ci}">
     <header class="constellation-top"><span class="constellation-count">${String(ci+1).padStart(2,'0')}</span><div class="constellation-title"><strong>${esc(constellation.name)}</strong><span>${esc(constellation.theme)}</span></div><div class="star-row-actions"><button class="compact" type="button" aria-label="Move ${esc(constellation.name)} earlier" onclick="moveConstellation(${ci},-1)" ${ci===0?'disabled':''}>↑</button><button class="compact" type="button" aria-label="Move ${esc(constellation.name)} later" onclick="moveConstellation(${ci},1)" ${ci===constellationState.length-1?'disabled':''}>↓</button><button class="danger compact" type="button" onclick="removeConstellation(${ci})">Remove constellation</button></div></header>
-    <div class="constellation-layout"><div class="pattern-shell"><div class="pattern-head"><div><strong>Formation canvas</strong><span>Drag nodes to shape. Select two nodes to toggle a line.</span></div><button class="compact" type="button" onclick="selectedNodes.delete(${ci});renderPattern(${ci})">Clear selection</button></div><svg class="pattern-svg" id="pattern_${ci}" viewBox="0 0 520 300" aria-label="${esc(constellation.name)} formation editor"></svg><div class="pattern-foot"><span><b>Drag</b> position</span><span><b>Click two stars</b> connect / disconnect</span><span><b>Depth</b> controlled by pitch and yaw</span></div></div>
+    <div class="constellation-layout"><div class="pattern-shell"><div class="pattern-head"><div><strong>Formation canvas</strong><span>Drag nodes to shape. Select two nodes to toggle a line.</span></div><button class="compact" type="button" onclick="selectedNodes.delete(${ci});renderPattern(${ci})">Clear selection</button></div><svg class="pattern-svg" id="pattern_${ci}" viewBox="0 0 520 300" aria-label="${esc(constellation.name)} formation editor"></svg><div class="pattern-foot"><span><b>Drag</b> position</span><span><b>Height</b> adjustable per star</span><span><b>Click two stars</b> connect / disconnect</span></div></div>
     <div class="constellation-controls">
       <div class="control-field full"><label for="c_${ci}_name">Constellation name</label><input type="text" id="c_${ci}_name" value="${esc(constellation.name)}" oninput="setConstellationField(${ci},'name',this.value)"></div>
       <div class="control-field full"><label for="c_${ci}_theme">Theme</label><input type="text" id="c_${ci}_theme" value="${esc(constellation.theme)}" oninput="setConstellationField(${ci},'theme',this.value)"></div>
@@ -567,6 +572,7 @@ function renderConstellations(){
     <div class="constellation-stars">${constellation.stars.map((star,si)=>`<details><summary><span class="star-no">${String(si+1).padStart(2,'0')}</span><span class="star-name">${esc(star.name)}</span><small>${esc(star.id)}</small><span class="summary-mark" aria-hidden="true"></span></summary><div class="fields">
       <div><label for="c_${ci}_s_${si}_name">Name</label><input type="text" id="c_${ci}_s_${si}_name" value="${esc(star.name)}" oninput="setStarField(${ci},${si},'name',this.value)"></div>
       <div><label for="c_${ci}_s_${si}_size">Glow size</label><input type="number" id="c_${ci}_s_${si}_size" min="1.2" max="6" step=".1" value="${star.size}" oninput="setStarField(${ci},${si},'size',this.value)"></div>
+      <div class="full"><label for="c_${ci}_s_${si}_height"><span>Height level</span> <output id="c_${ci}_s_${si}_height_out">${Number(-(constellation.points[si]?.[1]||0)).toFixed(2)}</output></label><input type="range" id="c_${ci}_s_${si}_height" min="-1.4" max="1.4" step=".05" value="${-(constellation.points[si]?.[1]||0)}" oninput="setStarHeight(${ci},${si},this.value,'c_${ci}_s_${si}_height_out')"></div>
       <div class="full"><label for="c_${ci}_s_${si}_depth"><span>Depth level</span> <output id="c_${ci}_s_${si}_depth_out">${Number(constellation.points[si]?.[2]||0).toFixed(2)}</output></label><input type="range" id="c_${ci}_s_${si}_depth" min="-1" max="1" step=".05" value="${constellation.points[si]?.[2]||0}" oninput="setStarDepth(${ci},${si},this.value,'c_${ci}_s_${si}_depth_out')"></div>
       <div><label for="c_${ci}_s_${si}_tag">Tag</label><input type="text" id="c_${ci}_s_${si}_tag" value="${esc(star.tag)}" oninput="setStarField(${ci},${si},'tag',this.value)"></div>
       <div><label for="c_${ci}_s_${si}_meta">Meta line</label><input type="text" id="c_${ci}_s_${si}_meta" value="${esc(star.meta)}" oninput="setStarField(${ci},${si},'meta',this.value)"></div>
