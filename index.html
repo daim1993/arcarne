@@ -637,6 +637,22 @@ DATA.forEach((d,i)=>{
   d.pos=new THREE.Vector3(r*Math.sin(phi)*Math.cos(th),(r*Math.cos(phi))*.55,r*Math.sin(phi)*Math.sin(th));
 });
 
+/* zodiac-inspired line formations: recognizable silhouettes instead of random zigzags */
+const CONSTELLATION_FORMS=[
+  {name:'ram',p:[[-1,-.15],[-.6,.05],[-.25,.55],[0,.15],[.25,.55],[.6,.05],[1,-.15]],e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[2,4]]},
+  {name:'bull',p:[[-.9,.65],[-.6,.1],[-.25,-.2],[.25,-.2],[.6,.1],[.9,.65],[0,.55]],e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0],[6,3]]},
+  {name:'twins',p:[[-.75,.9],[-.7,-.8],[-.2,-.4],[.2,-.4],[.7,-.8],[.75,.9],[0,.55]],e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0],[2,6]]},
+  {name:'crab',p:[[-.95,.2],[-.5,.7],[0,.25],[.5,.7],[.95,.2],[.5,-.55],[-.5,-.55]],e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0],[2,6]]},
+  {name:'lion',p:[[-.95,-.5],[-.55,-.75],[-.1,-.55],[.25,-.1],[.15,.45],[-.15,.9],[.55,.75],[.9,.3]],e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[4,7],[3,7]]},
+  {name:'maiden',p:[[-.85,-.7],[-.55,.65],[-.15,.15],[.1,.8],[.35,.2],[.65,.55],[.9,-.65]],e:[[0,1],[1,2],[2,3],[2,4],[4,5],[4,6],[1,4]]},
+  {name:'scales',p:[[-.9,.5],[-.45,.5],[0,.05],[.45,.5],[.9,.5],[-.5,-.55],[.5,-.55]],e:[[0,1],[1,2],[2,3],[3,4],[2,5],[2,6],[5,6]]},
+  {name:'scorpion',p:[[-.95,.45],[-.6,.2],[-.2,.45],[.15,.15],[.45,-.2],[.7,.2],[.95,.8]],e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[2,4]]},
+  {name:'arrow',p:[[-.9,-.5],[-.3,0],[.3,.55],[.9,.9],[-.3,.65],[.25,.15],[.1,-.55]],e:[[0,1],[1,2],[2,3],[1,4],[4,5],[5,6],[1,6]]},
+  {name:'goat',p:[[-.9,-.5],[-.6,.2],[-.15,.7],[.25,.25],[.55,.75],[.8,.15],[.95,-.6]],e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[3,5]]},
+  {name:'water',p:[[-.95,.45],[-.45,.1],[0,.45],[.45,.1],[.95,.45],[-.45,-.5],[.5,-.5]],e:[[0,1],[1,2],[2,3],[3,4],[1,5],[3,6],[5,6]]},
+  {name:'fish',p:[[-.9,.65],[-.45,.2],[0,-.35],[.45,.2],[.9,.65],[-.45,-.8],[.45,-.8]],e:[[0,1],[1,2],[2,3],[3,4],[1,5],[3,6],[5,6]]},
+];
+
 /* build constellation member data — outer shell, ~85 more stars */
 const CLINES=[]; // pairs of star DATA refs — updated per frame so lines touch spheres
 CONST.forEach((cn,ci)=>{
@@ -644,9 +660,16 @@ CONST.forEach((cn,ci)=>{
   const R=150+rnd()*60;
   const center=new THREE.Vector3(R*Math.sin(phi)*Math.cos(th),(R*Math.cos(phi))*.7,R*Math.sin(phi)*Math.sin(th));
   cn.center=center;
+  const form=CONSTELLATION_FORMS[ci%CONSTELLATION_FORMS.length];
+  const formScale=38+(ci%3)*3;
+  const formTilt=ci*.47-.55;
+  const axis=new THREE.Vector3(0,0,1);
   const made=[];
   cn.members.forEach((m,mi)=>{
-    const p=center.clone().add(new THREE.Vector3((rnd()-.5)*46,(rnd()-.5)*34,(rnd()-.5)*46));
+    const fp=form.p[mi%form.p.length];
+    const local=new THREE.Vector3(fp[0]*formScale,fp[1]*formScale*.9,Math.sin(mi*1.7+ci)*2.5);
+    local.applyAxisAngle(axis,formTilt);
+    const p=center.clone().add(local);
     const d={
       id:cn.name+'-'+mi,name:m,tag:cn.name+' · '+cn.theme,color:cn.color,size:2.1+rnd()*1.1,
       meta:'CONSTELLATION '+(ci+1).toString().padStart(2,'0')+' / 12',
@@ -654,9 +677,8 @@ CONST.forEach((cn,ci)=>{
       chips:[cn.theme],pos:p,constellation:cn.name,
     };
     DATA.push(d);made.push(d);
-    if(mi>0)CLINES.push([made[mi-1],d]);
   });
-  if(made.length>4)CLINES.push([made[2],made[4]]); // branch
+  form.e.forEach(([a,b])=>{if(a<made.length&&b<made.length)CLINES.push([made[a],made[b]]);});
 });
 
 /* ================= SCENE ================= */
