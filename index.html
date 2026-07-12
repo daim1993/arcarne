@@ -1151,7 +1151,9 @@ for(let i=0;i<16;i++){
 const stars=[];
 DATA.forEach(d=>{
   const grp=new THREE.Group();grp.position.copy(d.pos);
-  const constellationStar=!!d.constellation;
+  /* the middle career chain is interactive too, so it shares the constellation bloom */
+  const careerStar=['artdim','jump','7g','nova','watch','sentient'].includes(d.id);
+  const constellationStar=!!d.constellation||careerStar;
   /* layered bloom: white-hot heart + tinted gaussian halo + fine spikes */
   const heart=new THREE.Sprite(new THREE.SpriteMaterial({map:SOFT,
     color:new THREE.Color(0xf3ead7).lerp(new THREE.Color(d.color),.3),  // pearl-tinted core
@@ -1441,8 +1443,8 @@ const aPos=new Float32Array(ALINES.length*6);
 const aGeo=new THREE.BufferGeometry();
 aGeo.setAttribute('position',new THREE.BufferAttribute(aPos,3));
 scene.add(new THREE.LineSegments(aGeo,
-  glowLine(new THREE.LineBasicMaterial({color:0xc6974f,transparent:true,opacity:.2,
-    blending:THREE.AdditiveBlending}),.3)));
+  glowLine(new THREE.LineBasicMaterial({color:0xe0b96b,transparent:true,opacity:.46,
+    blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,toneMapped:false,fog:false}),.58)));
 /* Remembered discoveries stay in the atlas and counter; no route connector is drawn. */
 function updateSet(list,buf,geo){
   for(let i=0;i<list.length;i++){
