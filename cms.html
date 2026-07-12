@@ -54,6 +54,7 @@ h1 span{color:var(--gold)}
 .command-bar{position:sticky;top:12px;z-index:10;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px;border:1px solid var(--line-strong);background:rgba(10,11,16,.97);box-shadow:0 14px 44px rgba(0,0,0,.34)}
 button,.btn{min-height:42px;border:1px solid var(--line);border-radius:0;background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:10px 17px;text-decoration:none;font-family:var(--mono);font-size:.64rem;font-weight:500;letter-spacing:.13em;text-transform:uppercase;transition:color 180ms ease,border-color 180ms ease,background-color 180ms ease,transform 120ms ease}
 button:active,.btn:active{transform:scale(.98)}
+button:disabled{cursor:not-allowed;opacity:.35;transform:none}
 .primary{border-color:var(--gold);background:var(--gold);color:var(--void);font-weight:600;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px)}
 .danger{margin-left:auto;color:var(--muted)}
 #status{min-width:170px;min-height:1.2em;align-self:center;color:var(--gold-high);font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;text-align:right}
@@ -121,6 +122,7 @@ input[type=color]{padding:5px;cursor:pointer}input[type=color]::-webkit-color-sw
 .star-editor-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);background:rgba(5,6,10,.28)}.star-editor-head strong{font-size:.68rem;letter-spacing:.11em;text-transform:uppercase}.star-editor-head span{color:var(--faint);font-family:var(--mono);font-size:.54rem}
 .constellation-stars{display:grid;gap:1px;background:var(--line)}.constellation-stars details{border:0;background:var(--panel)}.constellation-stars details[open]{background:var(--panel-hover)}
 .star-row-actions{display:flex;align-items:center;gap:8px}.remove-star{min-height:30px;padding:5px 8px;color:var(--faint)}
+.constellation-top .star-row-actions{justify-self:end}.reorder-actions{display:flex;flex-wrap:wrap;gap:8px}.reorder-actions .danger{margin-left:auto}
 .constellation-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px}.constellation-bottom small{color:var(--faint);font-family:var(--mono);font-size:.54rem;letter-spacing:.05em}
 .constellation-empty{padding:34px;border:1px dashed var(--line-strong);text-align:center;color:var(--faint)}
 .io-wrap{position:relative;padding:18px;border:1px solid var(--line);background:var(--panel)}
@@ -144,7 +146,7 @@ input[type=color]{padding:5px;cursor:pointer}input[type=color]::-webkit-color-sw
   main{gap:44px;margin-top:48px}.section-heading{grid-template-columns:auto minmax(0,1fr);gap:12px}.section-rule{grid-column:1/-1}.section-description{margin-left:0}
   .grid{grid-template-columns:1fr}.fields{grid-template-columns:1fr;padding:14px}.fields .full{grid-column:auto}
   summary{grid-template-columns:34px minmax(0,1fr) 12px;padding-inline:13px}summary small{display:none}
-  .section-actions{margin:0 0 14px;justify-content:stretch;flex-direction:column}.section-actions button{width:100%}.constellation-top{grid-template-columns:34px minmax(0,1fr)}.constellation-top .danger{grid-column:1/-1;width:100%}.pattern-shell,.constellation-controls{padding:14px}.pattern-svg{min-height:220px}.constellation-controls{grid-template-columns:1fr}.control-field.full{grid-column:auto}.pattern-foot{display:grid}.constellation-bottom{align-items:stretch;flex-direction:column}.constellation-bottom button{width:100%}
+  .section-actions{margin:0 0 14px;justify-content:stretch;flex-direction:column}.section-actions button{width:100%}.constellation-top{grid-template-columns:34px minmax(0,1fr)}.constellation-top .star-row-actions{grid-column:1/-1;justify-self:stretch}.constellation-top .star-row-actions button{flex:1}.pattern-shell,.constellation-controls{padding:14px}.pattern-svg{min-height:220px}.constellation-controls{grid-template-columns:1fr}.control-field.full{grid-column:auto}.pattern-foot{display:grid}.constellation-bottom{align-items:stretch;flex-direction:column}.constellation-bottom button{width:100%}.reorder-actions{display:grid;grid-template-columns:1fr 1fr}.reorder-actions .danger{grid-column:1/-1;margin-left:0}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
@@ -218,7 +220,7 @@ input[type=text]:focus,textarea:focus{border-color:var(--cyan);box-shadow:inset 
         <h2 id="stars-title">Main stars · Content</h2>
         <span class="section-rule" aria-hidden="true"></span>
       </div>
-      <p class="section-description">Create the primary signals from scratch. Every main star controls its content, glow, color, and position in the inner universe.</p>
+      <p class="section-description">Create the primary signals from scratch. Guided Flight follows this list from top to bottom; every star controls its content, glow, color, and position.</p>
       <div class="section-actions main-star-actions"><button type="button" onclick="addMainStar()">Add main star</button><button class="danger" type="button" onclick="clearMainStars()">Clear main-star space</button></div>
       <div class="stars-list" id="stars"></div>
     </section>
@@ -229,7 +231,7 @@ input[type=text]:focus,textarea:focus{border-color:var(--cyan);box-shadow:inset 
         <h2 id="constellations-title">Constellation architect</h2>
         <span class="section-rule" aria-hidden="true"></span>
       </div>
-      <p class="section-description">Build the interactive sky. Drag stars to shape each formation, click two stars to connect or disconnect them, then control spacing and three-axis orientation.</p>
+      <p class="section-description">Build the interactive sky and its Star Atlas groups. Drag stars to shape each formation, click two stars to connect or disconnect them, then control spacing and three-axis orientation.</p>
       <div class="section-actions"><button type="button" onclick="addConstellation()">Add constellation</button></div>
       <div class="constellation-list" id="constellations"></div>
     </section>
@@ -420,6 +422,10 @@ function removeMainStar(index){
   const star=mainStarState[index];if(!star||!confirm('Remove '+star.name+' from the main-star space?'))return;
   mainStarState.splice(index,1);renderMainStars();flash('Main star removed');
 }
+function moveMainStar(index,direction){
+  const target=index+direction;if(target<0||target>=mainStarState.length)return;
+  [mainStarState[index],mainStarState[target]]=[mainStarState[target],mainStarState[index]];renderMainStars();flash('Guided Flight order updated');
+}
 function clearMainStars(){
   if(!mainStarState.length){flash('Main-star space is already clear');return;}
   if(!confirm('Clear every main star? Constellations will stay intact. Save changes to update the universe.'))return;
@@ -440,7 +446,7 @@ function renderMainStars(){
     <div class="full"><label for="m_${index}_img">Image URL</label><input type="text" id="m_${index}_img" value="${esc(star.img)}" placeholder="https://example.com/image.webp" oninput="setMainStarField(${index},'img',this.value)"></div>
     <div class="full"><label for="m_${index}_vid">Video URL</label><input type="text" id="m_${index}_vid" value="${esc(star.vid)}" placeholder="https://youtu.be/... or video.mp4" oninput="setMainStarField(${index},'vid',this.value)"></div>
     ${[1,2,3].map(button=>`<div><label for="m_${index}_b${button}l">Button ${button} label</label><input type="text" id="m_${index}_b${button}l" value="${esc(star['b'+button+'l'])}" oninput="setMainStarField(${index},'b${button}l',this.value)"></div><div><label for="m_${index}_b${button}u">Button ${button} link</label><input type="text" id="m_${index}_b${button}u" value="${esc(star['b'+button+'u'])}" oninput="setMainStarField(${index},'b${button}u',this.value)"></div>`).join('')}
-    <div class="full"><button class="danger compact" type="button" onclick="removeMainStar(${index})">Remove this main star</button></div>
+    <div class="full reorder-actions"><button class="compact" type="button" onclick="moveMainStar(${index},-1)" ${index===0?'disabled':''}>Move earlier</button><button class="compact" type="button" onclick="moveMainStar(${index},1)" ${index===mainStarState.length-1?'disabled':''}>Move later</button><button class="danger compact" type="button" onclick="removeMainStar(${index})">Remove this main star</button></div>
   </div></details>`).join('');
 }
 renderMainStars();
@@ -495,6 +501,10 @@ function removeConstellation(ci){
   const constellation=constellationState[ci];if(!constellation||!confirm('Remove '+constellation.name+' and all of its stars?'))return;
   constellationState.splice(ci,1);selectedNodes.clear();renderConstellations();flash('Constellation removed');
 }
+function moveConstellation(index,direction){
+  const target=index+direction;if(target<0||target>=constellationState.length)return;
+  [constellationState[index],constellationState[target]]=[constellationState[target],constellationState[index]];selectedNodes.clear();renderConstellations();flash('Star Atlas order updated');
+}
 function selectPatternNode(ci,si){
   const selected=selectedNodes.get(ci);
   if(selected===undefined){selectedNodes.set(ci,si);renderPattern(ci);return;}
@@ -530,7 +540,7 @@ addEventListener('pointerup',()=>{if(!dragNode)return;const finished=dragNode;dr
 function renderConstellations(){
   if(!constellationState.length){constellationWrap.innerHTML='<div class="constellation-empty">No interactive constellations. Add one to begin shaping the sky.</div>';return;}
   constellationWrap.innerHTML=constellationState.map((constellation,ci)=>`<article class="constellation-editor" data-constellation="${ci}">
-    <header class="constellation-top"><span class="constellation-count">${String(ci+1).padStart(2,'0')}</span><div class="constellation-title"><strong>${esc(constellation.name)}</strong><span>${esc(constellation.theme)}</span></div><button class="danger compact" type="button" onclick="removeConstellation(${ci})">Remove constellation</button></header>
+    <header class="constellation-top"><span class="constellation-count">${String(ci+1).padStart(2,'0')}</span><div class="constellation-title"><strong>${esc(constellation.name)}</strong><span>${esc(constellation.theme)}</span></div><div class="star-row-actions"><button class="compact" type="button" aria-label="Move ${esc(constellation.name)} earlier" onclick="moveConstellation(${ci},-1)" ${ci===0?'disabled':''}>↑</button><button class="compact" type="button" aria-label="Move ${esc(constellation.name)} later" onclick="moveConstellation(${ci},1)" ${ci===constellationState.length-1?'disabled':''}>↓</button><button class="danger compact" type="button" onclick="removeConstellation(${ci})">Remove constellation</button></div></header>
     <div class="constellation-layout"><div class="pattern-shell"><div class="pattern-head"><div><strong>Formation canvas</strong><span>Drag nodes to shape. Select two nodes to toggle a line.</span></div><button class="compact" type="button" onclick="selectedNodes.delete(${ci});renderPattern(${ci})">Clear selection</button></div><svg class="pattern-svg" id="pattern_${ci}" viewBox="0 0 520 300" aria-label="${esc(constellation.name)} formation editor"></svg><div class="pattern-foot"><span><b>Drag</b> position</span><span><b>Click two stars</b> connect / disconnect</span><span><b>Depth</b> controlled by pitch and yaw</span></div></div>
     <div class="constellation-controls">
       <div class="control-field full"><label for="c_${ci}_name">Constellation name</label><input type="text" id="c_${ci}_name" value="${esc(constellation.name)}" oninput="setConstellationField(${ci},'name',this.value)"></div>

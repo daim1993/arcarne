@@ -219,7 +219,7 @@ body.exploring #intro-scrim{opacity:.2}
 .atlas-close{align-self:start;width:40px;height:40px;border:1px solid var(--line);border-radius:2px;background:transparent;color:var(--dim);cursor:pointer}
 .atlas-search{padding:18px clamp(24px,4vw,42px);border-bottom:1px solid var(--line)}.atlas-search label{display:block;margin-bottom:8px;font:500 .52rem/1 var(--fm);letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
 .atlas-search input{width:100%;border:0;border-bottom:1px solid var(--line-strong);border-radius:0;background:transparent;color:var(--ink);padding:7px 0 12px;font-size:.92rem;outline:none}.atlas-search input::placeholder{color:var(--faint)}.atlas-search input:focus{border-color:var(--signal)}
-.atlas-filters{display:flex;flex-wrap:wrap;gap:7px;overflow-x:auto;padding:14px clamp(24px,4vw,42px);border-bottom:1px solid var(--line);scrollbar-width:none}.atlas-filter{flex:0 0 auto;padding:8px 10px;border:1px solid var(--line);border-radius:2px;background:transparent;color:var(--dim);font:600 .53rem/1 var(--fm);letter-spacing:.09em;text-transform:uppercase;cursor:pointer}.atlas-filter[aria-pressed="true"]{background:var(--signal);border-color:var(--signal);color:var(--void)}
+.atlas-filters{display:flex;flex-wrap:wrap;gap:7px;overflow-x:auto;padding:14px clamp(24px,4vw,42px);border-bottom:1px solid var(--line);scrollbar-width:none}.atlas-filter{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--line);border-radius:2px;background:transparent;color:var(--dim);font:600 .53rem/1 var(--fm);letter-spacing:.09em;text-transform:uppercase;cursor:pointer}.atlas-filter small{color:var(--faint);font:500 .47rem/1 var(--fm);letter-spacing:.04em}.atlas-filter[aria-pressed="true"]{background:var(--signal);border-color:var(--signal);color:var(--void)}.atlas-filter[aria-pressed="true"] small{color:inherit;opacity:.72}
 .atlas-body{min-height:0;overflow:auto;overscroll-behavior:contain}.atlas-summary{display:flex;justify-content:space-between;gap:16px;padding:16px clamp(24px,4vw,42px);color:var(--faint);font:500 .52rem/1.4 var(--fm);letter-spacing:.1em;text-transform:uppercase}
 #atlas-list{list-style:none;padding:0 0 34px}.atlas-row{width:100%;display:grid;grid-template-columns:32px 12px 1fr auto;align-items:center;gap:12px;padding:15px clamp(24px,4vw,42px);border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);text-align:left;cursor:pointer;transition:background-color .2s,color .2s}.atlas-row:hover,.atlas-row:focus-visible{background:oklch(22% .05 282 / .7)}
 .row-no{font:500 .5rem/1 var(--fm);color:var(--faint)}.row-dot{width:7px;height:7px;border-radius:50%;background:var(--row-color);box-shadow:0 0 12px var(--row-color)}.row-copy{min-width:0}.row-copy strong{display:block;font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row-copy small{display:block;margin-top:4px;font:500 .5rem/1.35 var(--fm);letter-spacing:.07em;color:var(--faint);text-transform:uppercase}.row-mark{font:500 .5rem/1 var(--fm);letter-spacing:.08em;color:var(--signal);text-transform:uppercase}.atlas-empty{padding:40px;color:var(--dim);line-height:1.7}
@@ -353,7 +353,7 @@ body.exploring #intro-scrim{opacity:.16}
 </style>
 </head>
 <body>
-<a id="skip-link" href="#atlas" onclick="openAtlas('signature');return false">Skip to the star atlas</a>
+<a id="skip-link" href="#atlas" onclick="openAtlas();return false">Skip to the star atlas</a>
 
 <div id="loader" role="status" aria-label="Loading the Arcarne spatial portfolio">
   <div class="loader-core">
@@ -444,14 +444,7 @@ body.exploring #intro-scrim{opacity:.16}
     <label for="atlas-query">Search the observable work</label>
     <input id="atlas-query" type="search" autocomplete="off" placeholder="Project, discipline, tool, or employer">
   </div>
-  <div class="atlas-filters" role="toolbar" aria-label="Filter the star atlas">
-    <button class="atlas-filter" type="button" data-filter="signature" aria-pressed="true">Signature work</button>
-    <button class="atlas-filter" type="button" data-filter="story">Storyboards</button>
-    <button class="atlas-filter" type="button" data-filter="motion">Motion</button>
-    <button class="atlas-filter" type="button" data-filter="worlds">3D worlds</button>
-    <button class="atlas-filter" type="button" data-filter="journey">Journey</button>
-    <button class="atlas-filter" type="button" data-filter="all">All signals</button>
-  </div>
+  <div class="atlas-filters" id="atlas-filters" role="toolbar" aria-label="Filter the star atlas"></div>
   <div class="atlas-body">
     <div class="atlas-summary"><span id="atlas-total">0 signals</span><span id="atlas-visited">0 remembered</span></div>
     <ul id="atlas-list" aria-live="polite"></ul>
@@ -1527,7 +1520,7 @@ CONST.forEach((cn,ci)=>{
     id:'constellation-'+cn.name.toLowerCase(),name:cn.name,tag:'Constellation · '+cn.theme,color:cn.color,
     meta:cn.members.length+' STARS · SECTOR '+(ci+1).toString().padStart(2,'0'),
     desc:'The '+cn.theme.toLowerCase()+' constellation. Click any of its stars for detail.',
-    chips:cn.members.slice(0,6),size:24,pos:cn.center.clone(),
+    chips:cn.members.slice(0,6),size:24,pos:cn.center.clone(),constellation:cn.name,
     grp:{position:cn.center},isConstellation:true,
   };
   scene.add(lbl);labelSprites.push(lbl);
@@ -2030,7 +2023,13 @@ const atlasQuery=document.getElementById('atlas-query');
 const atlasList=document.getElementById('atlas-list');
 const tourbarEl=document.getElementById('tourbar');
 const srLive=document.getElementById('sr-live');
-const ATLAS_DATA=[...DATA,...labelSprites.map(label=>label.userData)];
+const MAIN_ATLAS_STARS=DATA.slice(0,MAJOR_COUNT);
+const CONSTELLATION_ATLAS_STARS=DATA.slice(MAJOR_COUNT);
+const ATLAS_DATA=[...MAIN_ATLAS_STARS];
+CONST.forEach((constellation,index)=>{
+  const label=labelSprites[index]?.userData;if(label)ATLAS_DATA.push(label);
+  CONSTELLATION_ATLAS_STARS.filter(star=>star.constellation===constellation.name).forEach(star=>ATLAS_DATA.push(star));
+});
 const BY_ID=new Map(ATLAS_DATA.map(d=>[String(d.id),d]));
 
 function readVisited(){
@@ -2082,16 +2081,34 @@ function returnToObservatory(){
   endTour(false);goHome();document.body.classList.remove('exploring');introEl.classList.remove('dismissed');introEl.removeAttribute('aria-hidden');
 }
 
-let atlasFilter='signature',atlasReturnFocus=null;
+const atlasFiltersEl=document.getElementById('atlas-filters');
+const ATLAS_FILTERS=[];
+if(MAIN_ATLAS_STARS.length)ATLAS_FILTERS.push({id:'main',label:'Main stars'});
+if(CONST.length){
+  ATLAS_FILTERS.push({id:'constellations',label:'Constellations'});
+  CONST.forEach(constellation=>ATLAS_FILTERS.push({id:'const:'+constellation.id,label:constellation.name,title:constellation.theme}));
+}
+ATLAS_FILTERS.push({id:'all',label:'All signals'});
+const ATLAS_DEFAULT_FILTER=MAIN_ATLAS_STARS.length?'main':(CONST.length?'const:'+CONST[0].id:'all');
+let atlasFilter=ATLAS_DEFAULT_FILTER,atlasReturnFocus=null;
 const haystack=d=>[d.name,d.tag,d.meta,d.desc,...(d.chips||[])].join(' ').toLowerCase();
-function filterAtlas(d){
-  const h=haystack(d);
-  if(atlasFilter==='signature')return DATA.slice(0,8).includes(d);
-  if(atlasFilter==='story')return /story|narrative|frame|fabula|shot|cinema/.test(h);
-  if(atlasFilter==='motion')return /motion|campaign|animation|kinetic|ignis|motus/.test(h);
-  if(atlasFilter==='worlds')return /3d|world|environment|metaverse|unreal|blender|trion|aether/.test(h);
-  if(atlasFilter==='journey')return d.tag?.startsWith('Journey')||['mind','toolkit','contact'].includes(d.id);
+function atlasFilterMatches(filter,d){
+  if(filter==='main')return MAIN_ATLAS_STARS.includes(d);
+  if(filter==='constellations')return Boolean(d.constellation||d.isConstellation);
+  if(filter.startsWith('const:')){const constellation=CONST.find(item=>('const:'+item.id)===filter);return Boolean(constellation&&d.constellation===constellation.name);}
   return true;
+}
+function filterAtlas(d){return atlasFilterMatches(atlasFilter,d)}
+function renderAtlasFilters(){
+  const fragment=document.createDocumentFragment();
+  ATLAS_FILTERS.forEach(filter=>{
+    const button=document.createElement('button');button.type='button';button.className='atlas-filter';button.dataset.filter=filter.id;
+    button.setAttribute('aria-pressed',String(filter.id===atlasFilter));if(filter.title)button.title=filter.title;
+    const label=document.createElement('span');label.textContent=filter.label;
+    const count=document.createElement('small');count.textContent=String(ATLAS_DATA.filter(item=>atlasFilterMatches(filter.id,item)).length);
+    button.append(label,count);fragment.append(button);
+  });
+  atlasFiltersEl.replaceChildren(fragment);
 }
 function renderAtlas(){
   const q=atlasQuery.value.trim().toLowerCase();
@@ -2113,11 +2130,11 @@ function renderAtlas(){
   document.getElementById('atlas-visited').textContent=`${visited.size} remembered`;
 }
 function setAtlasFilter(filter){
-  atlasFilter=filter;
-  document.querySelectorAll('.atlas-filter').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.filter===filter)));
+  atlasFilter=ATLAS_FILTERS.some(item=>item.id===filter)?filter:ATLAS_DEFAULT_FILTER;
+  document.querySelectorAll('.atlas-filter').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.filter===atlasFilter)));
   renderAtlas();
 }
-function openAtlas(filter='signature'){
+function openAtlas(filter=ATLAS_DEFAULT_FILTER){
   dismissIntro();atlasReturnFocus=document.activeElement;atlasQuery.value='';setAtlasFilter(filter);
   if(!atlasEl.open){if(typeof atlasEl.showModal==='function')atlasEl.showModal();else atlasEl.setAttribute('open','');}
   requestAnimationFrame(()=>atlasQuery.focus());
@@ -2133,16 +2150,8 @@ atlasList.addEventListener('click',event=>{
   closeAtlas();sfx.fly();flyTo(d);
 });
 
-const TOUR=[
-  {id:'sentient',chapter:'01 · Story becomes structure'},
-  {id:'dewa',chapter:'02 · Sequence creates clarity'},
-  {id:'gitex',chapter:'03 · Motion earns attention'},
-  {id:'nova',chapter:'04 · Frames become worlds'},
-  {id:'patata',chapter:'05 · Characters carry memory'},
-  {id:'mind',chapter:'06 · Logic shapes imagination'},
-  {id:'contact',chapter:'07 · Build the next universe'}
-].filter(stop=>BY_ID.has(stop.id));
-if(!TOUR.length)DATA.slice(0,7).forEach((d,index)=>TOUR.push({id:d.id,chapter:String(index+1).padStart(2,'0')+' · '+d.tag}));
+const TOUR_SOURCE=MAIN_ATLAS_STARS.length?MAIN_ATLAS_STARS:labelSprites.map(label=>label.userData);
+const TOUR=TOUR_SOURCE.map((signal,index)=>({id:String(signal.id),chapter:String(index+1).padStart(2,'0')+' · '+(signal.tag||signal.meta||'Arcarne signal')}));
 let tourActive=false,tourIndex=0;
 function updateTourUI(){
   if(!TOUR.length)return;
@@ -2167,17 +2176,17 @@ document.getElementById('tour-prev').addEventListener('click',()=>visitTour(tour
 document.getElementById('tour-next').addEventListener('click',()=>tourIndex===TOUR.length-1?endTour(false):visitTour(tourIndex+1));
 document.getElementById('tour-end').addEventListener('click',()=>endTour(true));
 document.getElementById('tour-trigger').addEventListener('click',()=>tourActive?endTour(true):startTour(0));
-document.getElementById('atlas-trigger').addEventListener('click',()=>openAtlas('signature'));
+document.getElementById('atlas-trigger').addEventListener('click',()=>openAtlas());
 document.getElementById('intro-tour').addEventListener('click',()=>startTour(0));
-document.getElementById('intro-atlas').addEventListener('click',()=>openAtlas('signature'));
+document.getElementById('intro-atlas').addEventListener('click',()=>openAtlas());
 document.getElementById('brand').addEventListener('click',returnToObservatory);
 addEventListener('keydown',event=>{
   const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);
-  if(event.key==='/'&&!typing){event.preventDefault();openAtlas('signature');return;}
+  if(event.key==='/'&&!typing){event.preventDefault();openAtlas();return;}
   if(tourActive&&!typing&&event.key==='ArrowRight'){event.preventDefault();tourIndex===TOUR.length-1?endTour(false):visitTour(tourIndex+1);}
   if(tourActive&&!typing&&event.key==='ArrowLeft'){event.preventDefault();visitTour(tourIndex-1);}
 });
-updateMemoryUI();renderAtlas();
+updateMemoryUI();renderAtlasFilters();renderAtlas();
 
 
 /* ================= CAMERA / CONTROL — full orbit ================= */
